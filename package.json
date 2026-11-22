@@ -12,7 +12,10 @@
     "start": "node --env-file-if-exists=.env.local dist/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
+    "db:studio": "dotenv -e .env.local -- prisma studio",
+    "db:deploy": "dotenv -e .env.local -- prisma migrate deploy"
   },
   "repository": {
     "type": "git",
@@ -42,6 +45,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/supertest": "^7.2.1",
+    "dotenv-cli": "^11.1.0",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
