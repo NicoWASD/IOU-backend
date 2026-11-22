@@ -259,7 +259,8 @@ Códigos HTTP: `400` datos mal formados · `401` sin autenticar · `403` sin per
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | React + TypeScript + Vite + Tailwind CSS · React Router · TanStack Query |
+| Frontend | React + TypeScript + Vite + Tailwind CSS v4 · shadcn/ui · lucide-react · sonner · React Router · TanStack Query |
+| Diseño | Sistema de diseño en [design.md](design.md) |
 | Validación | Zod en el back (fuente de verdad) y en el front (formularios); los esquemas se duplican porque son repos separados |
 | Backend | Node.js + Express + TypeScript (API REST) |
 | Base de datos | PostgreSQL (Neon) |

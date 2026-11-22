@@ -18,8 +18,9 @@
 
 | Hito | Módulo | Objetivo | Historias |
 |---|---|---|---|
+| **D0** | Diseño | Sistema de diseño, patrones de UX y prototipo navegable validados ([design.md](design.md)) | — |
 | **H0** | Fundaciones | Esqueleto front + back + DB, desplegado de punta a punta | HU-00 |
-| **H1** | Autenticación | Los usuarios pueden registrarse e ingresar | HU-01 a HU-05 |
+| **H1** | Landing y autenticación | Los visitantes conocen IOU, se registran e ingresan | HU-01 a HU-05, HU-30 |
 | **H2** | Grupos y miembros | Crear grupos y armar quién participa | HU-06 a HU-11 |
 | **H3** | Gastos | Cargar gastos con los 3 modos de división | HU-12 a HU-18 |
 | **H4** | Balances y pagos | Saber quién debe a quién y saldar deudas | HU-19 a HU-25 |
@@ -80,6 +81,14 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 - **CA-05.2:** Dado un request a la API sin token, cuando llega, entonces responde 401.
 
 ---
+
+### HU-30 · Landing pública — M · L
+*Como* visitante, *quiero* entender en pocos segundos qué es IOU y probarlo, *para* decidir si creo una cuenta.
+**Diseño:** sección 5 de [design.md](design.md).
+- **CA-30.1:** Dado un visitante, cuando entra a `/`, entonces ve el título, la propuesta de valor y el botón "Crear un grupo gratis", sin hacer scroll (en 375 px y en 1280 px).
+- **CA-30.2:** Dada la demo del hero, cuando cambio el monto o la cantidad de personas, entonces los vales se recalculan con el mismo reparto con redondeo de la spec (sección 4.2).
+- **CA-30.3:** Dado un usuario ya logueado, cuando entra a `/`, entonces el botón principal dice "Ir a mis grupos".
+- **CA-30.4:** La landing obtiene ≥ 90 en Lighthouse (Performance y Accessibility) en mobile.
 
 ## H2 · Grupos y miembros
 
@@ -258,9 +267,9 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 | Hito | Historias | Must | Should |
 |---|---|---|---|
 | H0 | 1 | 1 | 0 |
-| H1 | 5 | 5 | 0 |
+| H1 | 6 | 6 | 0 |
 | H2 | 6 | 5 | 1 |
 | H3 | 7 | 6 | 1 |
 | H4 | 7 | 4 | 3 |
 | H5 | 4 | 4 | 0 |
-| **Total** | **30** | **25** | **5** |
+| **Total** | **31** | **26** | **5** |
