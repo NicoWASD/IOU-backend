@@ -14,7 +14,7 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.url({ message: 'tiene que ser una URL de conexión válida' }),
-  DIRECT_URL: z.url().optional(),
+  DATABASE_URL_UNPOOLED: z.url().optional(),
   CORS_ORIGIN: corsList,
 });
 

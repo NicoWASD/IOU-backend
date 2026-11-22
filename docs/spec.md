@@ -253,7 +253,7 @@ Códigos HTTP: `400` datos mal formados · `401` sin autenticar · `403` sin per
 - `repositories/` (u ORM) → acceso a datos.
 - `middlewares/` → autenticación JWT, manejo centralizado de errores y validación de esquemas.
 
-**Configuración por variables de entorno:** `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN` y `PORT` en el back; `VITE_API_URL` (o equivalente) en el front. Se incluye un `.env.example` sin valores reales.
+**Configuración por variables de entorno:** `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `JWT_SECRET`, `CORS_ORIGIN` y `PORT` en el back; `VITE_API_URL` (o equivalente) en el front. Se incluye un `.env.example` sin valores reales.
 
 ### Stack
 
@@ -331,7 +331,8 @@ docker build -t iou-client --build-arg VITE_API_URL=http://localhost:3000/api . 
 
 | Repo | Variable | Ejemplo |
 |---|---|---|
-| api | `DATABASE_URL` | `postgresql://...neon.tech/app?sslmode=require` |
+| api | `DATABASE_URL` | URL *pooled* de Neon (host con `-pooler`), la usa la app |
+| api | `DATABASE_URL_UNPOOLED` | URL directa de Neon (sin `-pooler`), la usa Prisma para las migraciones |
 | api | `JWT_SECRET` | cadena aleatoria larga |
 | api | `JWT_EXPIRES_IN` | `7d` |
 | api | `CORS_ORIGIN` | `https://iou-client.vercel.app,http://localhost:5173` |
