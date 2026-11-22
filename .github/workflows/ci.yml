@@ -28,4 +28,5 @@ jobs:
       - run: docker build -t iou-backend .
       - name: El contenedor arranca y valida su entorno
         run: |
-          docker run --rm -e CORS_ORIGIN=http://localhost iou-backend node dist/server.js && exit 1 || echo "Sin DATABASE_URL termina con error, como se espera"
+          if timeout 20 docker run --rm -e CORS_ORIGIN=http://localhost iou-backend node dist/server.js; then exit 1; fi
+          echo "Sin DATABASE_URL termina con error, como se espera"
