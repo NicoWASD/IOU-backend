@@ -1,0 +1,61 @@
+{
+  "name": "iou-backend",
+  "version": "0.1.0",
+  "description": "API REST de IOU",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "dev": "tsx watch --env-file-if-exists=.env.local src/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=.env.local dist/server.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NicoWASD/IOU-backend.git"
+  },
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/NicoWASD/IOU-backend/issues"
+  },
+  "homepage": "https://github.com/NicoWASD/IOU-backend#readme",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "prisma": "^6.19.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@neon/config": "^1.14.6",
+    "@neon/env": "^2.1.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "supertest": "^7.3.2",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.1"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true
+  }
+}
