@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { expect, it } from 'vitest';
-import { createApp } from '../src/app.js';
+import { makeTestApp } from './helpers/testApp.js';
 
-const ok = createApp({ checkDb: async () => {}, corsOrigins: ['http://localhost:5173'] });
+const { app: ok } = makeTestApp();
 
 it('ruta inexistente → 404 con formato de error', async () => {
   const res = await request(ok).get('/api/nada');
