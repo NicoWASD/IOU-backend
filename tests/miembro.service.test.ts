@@ -202,6 +202,41 @@ describe('quitar', () => {
   });
 });
 
+describe('precedencia de reglas', () => {
+  beforeEach(async () => {
+    await service.agregar(sofi, grupoId, 'tomi@mail.com');
+  });
+
+  it('el admin quitándose con saldo ≠ 0 → ADMIN_NO_PUEDE_SALIR, no SALDO_PENDIENTE', async () => {
+    const s = conSaldos({ saldoDe: async () => 500 });
+    await expect(s.quitar(sofi, grupoId, sofi)).rejects.toMatchObject({
+      code: 'ADMIN_NO_PUEDE_SALIR',
+    });
+  });
+
+  it('un no-admin sobre un grupo archivado → SOLO_ADMIN (agregar y quitar)', async () => {
+    grupos.archivar(grupoId);
+    await expect(service.agregar(tomi, grupoId, 'juli@mail.com')).rejects.toMatchObject({
+      code: 'SOLO_ADMIN',
+    });
+    await expect(service.quitar(tomi, grupoId, sofi)).rejects.toMatchObject({
+      code: 'SOLO_ADMIN',
+    });
+  });
+
+  it('un no-admin quitando a un no miembro → SOLO_ADMIN, no MIEMBRO_NO_ENCONTRADO', async () => {
+    await expect(service.quitar(tomi, grupoId, juli)).rejects.toMatchObject({
+      code: 'SOLO_ADMIN',
+    });
+  });
+
+  it('un no-admin agregando un email inexistente → SOLO_ADMIN (no revela qué emails existen)', async () => {
+    await expect(service.agregar(tomi, grupoId, 'nadie@mail.com')).rejects.toMatchObject({
+      code: 'SOLO_ADMIN',
+    });
+  });
+});
+
 describe('listar', () => {
   it('cualquier miembro activo ve a todos, activos e inactivos', async () => {
     await service.agregar(sofi, grupoId, 'tomi@mail.com');
