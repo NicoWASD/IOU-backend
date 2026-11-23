@@ -186,6 +186,44 @@ describe('editar', () => {
   });
 });
 
+describe('casos borde', () => {
+  it('listar de un usuario sin grupos devuelve []', async () => {
+    expect(await service.listar(juli)).toEqual([]);
+  });
+
+  it('un grupo archivado se sigue pudiendo consultar (RN-15: solo lectura)', async () => {
+    const g = await service.crear(sofi, { nombre: 'Depto' });
+    grupos.archivar(g.id);
+    expect((await service.detalle(sofi, g.id)).archivado).toBe(true);
+  });
+
+  it('un miembro común que edita un archivado recibe SOLO_ADMIN (permiso antes que estado)', async () => {
+    const g = await service.crear(sofi, { nombre: 'Depto' });
+    grupos.sembrarMiembro(g.id, tomi);
+    grupos.archivar(g.id);
+    await expect(service.editar(tomi, g.id, { nombre: 'X' })).rejects.toMatchObject({
+      code: 'SOLO_ADMIN',
+    });
+  });
+
+  it('un admin dado de baja recibe GRUPO_NO_ENCONTRADO al editar', async () => {
+    const g = await service.crear(sofi, { nombre: 'Depto' });
+    grupos.sembrarMiembro(g.id, tomi, 'ADMIN', false);
+    await expect(service.editar(tomi, g.id, { nombre: 'X' })).rejects.toMatchObject({
+      status: 404,
+      code: 'GRUPO_NO_ENCONTRADO',
+    });
+  });
+
+  it('editar sin campos devuelve el grupo sin cambios', async () => {
+    const g = await service.crear(sofi, { nombre: 'Depto', descripcion: 'd' });
+    expect(await service.editar(sofi, g.id, {})).toMatchObject({
+      nombre: 'Depto',
+      descripcion: 'd',
+    });
+  });
+});
+
 describe('contexto', () => {
   it('devuelve el grupo y el rol del actor activo', async () => {
     const g = await service.crear(sofi, { nombre: 'Depto' });

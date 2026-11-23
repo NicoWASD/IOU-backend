@@ -32,6 +32,11 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
     ...g,
     creadoPor: ref(creadoPorId),
   });
+  // Igual que Prisma: miembros por fecha de alta
+  const delGrupo = (grupoId: string) =>
+    miembros
+      .filter((m) => m.grupoId === grupoId)
+      .sort((a, b) => a.fechaAlta.getTime() - b.fechaAlta.getTime());
   const fila = (grupoId: string, usuarioId: string) =>
     miembros.find((m) => m.grupoId === grupoId && m.usuarioId === usuarioId);
   const insertarMiembro = (grupoId: string, usuarioId: string, rol: Rol, activo = true) => {
@@ -59,8 +64,8 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
         .filter((g) => fila(g.id, usuarioId)?.activo === true)
         .map((g) => ({
           ...toRow(g),
-          miembrosActivos: miembros
-            .filter((m) => m.grupoId === g.id && m.activo)
+          miembrosActivos: delGrupo(g.id)
+            .filter((m) => m.activo)
             .map((m) => ref(m.usuarioId)),
         }));
     },
@@ -73,12 +78,10 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       return m ? { rol: m.rol, activo: m.activo } : null;
     },
     async miembros(grupoId) {
-      return miembros
-        .filter((m) => m.grupoId === grupoId)
-        .map((m) => {
-          const u = usuario(m.usuarioId);
-          return { id: u.id, nombre: u.nombre, email: u.email, rol: m.rol, activo: m.activo };
-        });
+      return delGrupo(grupoId).map((m) => {
+        const u = usuario(m.usuarioId);
+        return { id: u.id, nombre: u.nombre, email: u.email, rol: m.rol, activo: m.activo };
+      });
     },
     async actualizar(grupoId, d) {
       const g = grupos.find((x) => x.id === grupoId);
