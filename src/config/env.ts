@@ -16,6 +16,8 @@ const schema = z.object({
   DATABASE_URL: z.url({ message: 'tiene que ser una URL de conexión válida' }),
   DATABASE_URL_UNPOOLED: z.url().optional(),
   CORS_ORIGIN: corsList,
+  JWT_SECRET: z.string().min(32, 'tiene que tener al menos 32 caracteres'),
+  JWT_EXPIRES_IN: z.string().min(1).default('7d'),
 });
 
 export type Env = z.infer<typeof schema>;

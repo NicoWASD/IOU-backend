@@ -4,6 +4,7 @@ import { loadEnv } from '../src/config/env.js';
 const base = {
   DATABASE_URL: 'postgresql://u:p@localhost:5432/app',
   CORS_ORIGIN: 'http://localhost:5173',
+  JWT_SECRET: 's'.repeat(32),
 };
 
 describe('loadEnv', () => {
@@ -25,5 +26,13 @@ describe('loadEnv', () => {
 
   it('rechaza PORT no numérico', () => {
     expect(() => loadEnv({ ...base, PORT: 'abc' })).toThrow(/PORT/);
+  });
+
+  it('exige JWT_SECRET de al menos 32 caracteres', () => {
+    expect(() => loadEnv({ ...base, JWT_SECRET: 'corto' })).toThrow(/JWT_SECRET/);
+  });
+
+  it('JWT_EXPIRES_IN por defecto 7d', () => {
+    expect(loadEnv(base).JWT_EXPIRES_IN).toBe('7d');
   });
 });

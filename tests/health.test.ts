@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { expect, it } from 'vitest';
-import { createApp } from '../src/app.js';
+import { makeTestApp } from './helpers/testApp.js';
 
-const ok = createApp({ checkDb: async () => {}, corsOrigins: ['http://localhost:5173'] });
-const down = createApp({
+const { app: ok } = makeTestApp();
+const { app: down } = makeTestApp({
   checkDb: async () => {
     throw new Error('ECONNREFUSED');
   },

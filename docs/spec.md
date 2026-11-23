@@ -221,6 +221,30 @@ POST /api/grupos/7/gastos
 }
 ```
 
+### Autenticación (H1)
+
+| Ruta | Body | Respuesta OK |
+|---|---|---|
+| `POST /auth/register` | `{ nombre, email, password }` | `201 { token, usuario }` |
+| `POST /auth/login` | `{ email, password }` | `200 { token, usuario }` |
+| `GET /auth/me` | — (requiere token) | `200 { usuario }` |
+
+- `usuario` es `{ id, nombre, email }` y nunca incluye la contraseña ni su hash.
+- **Validación:** el email se guarda con `trim` y en minúsculas (hasta 120 caracteres); la contraseña tiene de 8 a 72 caracteres (72 es el límite de bcrypt); el nombre, de 1 a 80.
+- **Token:** JWT HS256, con `sub` igual al id del usuario y vencimiento `JWT_EXPIRES_IN` (7 días por defecto). El front lo manda como `Authorization: Bearer <token>`.
+- **Límite de intentos:** 10 cada 15 minutos por IP en `register` y `login`.
+- Un login con email inexistente o con contraseña incorrecta devuelve el mismo error, con el mismo tiempo de respuesta.
+
+| HTTP | `code` | Cuándo |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Datos inválidos; `details` es `{ campo: mensaje }` |
+| 401 | `CREDENCIALES_INVALIDAS` | Email o contraseña incorrectos |
+| 401 | `NO_AUTENTICADO` | Falta el token |
+| 401 | `TOKEN_INVALIDO` | Token inválido, o su usuario ya no existe |
+| 401 | `TOKEN_EXPIRADO` | El token venció |
+| 409 | `EMAIL_EN_USO` | El email ya está registrado |
+| 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos |
+
 ### Formato de error
 ```json
 { "error": { "code": "SUMA_PARTICIPACIONES_INVALIDA", "message": "Las participaciones suman $12.400,50 y el gasto es de $12.500,50", "details": { "diferencia": "100.00" } } }
