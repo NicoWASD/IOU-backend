@@ -1,5 +1,6 @@
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import type { GrupoRepository, GrupoRow, Miembro, Rol } from '../domain/grupo.js';
+import { AppError } from '../lib/errors.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Postgres rechaza un id que no es UUID: para el dominio es simplemente "no existe". */
@@ -105,6 +106,38 @@ export function createPrismaGrupoRepository(prisma: PrismaClient): GrupoReposito
     async actualizar(grupoId, d) {
       const g = await prisma.grupo.update({ where: { id: grupoId }, data: d, select: grupoSelect });
       return toRow(g);
+    },
+
+    async agregarMiembro(grupoId, usuarioId) {
+      try {
+        const m = await prisma.miembroGrupo.create({
+          data: { grupoId, usuarioId, rol: 'MIEMBRO' },
+          select: miembroSelect,
+        });
+        return toMiembro(m);
+      } catch (err) {
+        // Dos altas simultáneas de la misma persona: la PK compuesta gana
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new AppError(409, 'YA_ES_MIEMBRO', 'Ya es miembro del grupo');
+        }
+        throw err;
+      }
+    },
+
+    async reactivarMiembro(grupoId, usuarioId) {
+      const m = await prisma.miembroGrupo.update({
+        where: { grupoId_usuarioId: { grupoId, usuarioId } },
+        data: { activo: true },
+        select: miembroSelect,
+      });
+      return toMiembro(m);
+    },
+
+    async desactivarMiembro(grupoId, usuarioId) {
+      await prisma.miembroGrupo.update({
+        where: { grupoId_usuarioId: { grupoId, usuarioId } },
+        data: { activo: false },
+      });
     },
   };
 }

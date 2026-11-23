@@ -51,6 +51,12 @@ export interface GrupoRepository {
     grupoId: string,
     d: { nombre?: string; descripcion?: string | null },
   ): Promise<GrupoRow>;
+  /** Alta como MIEMBRO activo. Tira AppError 409 YA_ES_MIEMBRO si la membresía ya existe. */
+  agregarMiembro(grupoId: string, usuarioId: string): Promise<Miembro>;
+  /** Vuelve a activar una membresía existente, sin duplicarla (CB-14). */
+  reactivarMiembro(grupoId: string, usuarioId: string): Promise<Miembro>;
+  /** Baja lógica: `activo = false`. */
+  desactivarMiembro(grupoId: string, usuarioId: string): Promise<void>;
 }
 
 /** Saldo de un miembro en el grupo, en centavos. */

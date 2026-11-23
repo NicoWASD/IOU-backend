@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { GrupoRepository, GrupoRow, Rol, UsuarioRef } from '../../src/domain/grupo.js';
+import type {
+  GrupoRepository,
+  GrupoRow,
+  Miembro,
+  Rol,
+  UsuarioRef,
+} from '../../src/domain/grupo.js';
 import type { UsuarioConHash } from '../../src/domain/usuario.js';
+import { AppError } from '../../src/lib/errors.js';
 
 type GrupoFila = Omit<GrupoRow, 'creadoPor'> & { creadoPorId: string };
 type MiembroFila = {
@@ -39,6 +46,16 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       .sort((a, b) => a.fechaAlta.getTime() - b.fechaAlta.getTime());
   const fila = (grupoId: string, usuarioId: string) =>
     miembros.find((m) => m.grupoId === grupoId && m.usuarioId === usuarioId);
+  // Como un UPDATE de Prisma sobre una fila que no existe: falla
+  const existente = (grupoId: string, usuarioId: string) => {
+    const m = fila(grupoId, usuarioId);
+    if (!m) throw new Error('Membresía inexistente');
+    return m;
+  };
+  const aMiembro = (m: MiembroFila): Miembro => {
+    const u = usuario(m.usuarioId);
+    return { id: u.id, nombre: u.nombre, email: u.email, rol: m.rol, activo: m.activo };
+  };
   const insertarMiembro = (grupoId: string, usuarioId: string, rol: Rol, activo = true) => {
     if (fila(grupoId, usuarioId)) throw new Error('PK duplicada en miembros_grupo');
     miembros.push({ grupoId, usuarioId, rol, activo, fechaAlta: ahora() });
@@ -78,10 +95,7 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       return m ? { rol: m.rol, activo: m.activo } : null;
     },
     async miembros(grupoId) {
-      return delGrupo(grupoId).map((m) => {
-        const u = usuario(m.usuarioId);
-        return { id: u.id, nombre: u.nombre, email: u.email, rol: m.rol, activo: m.activo };
-      });
+      return delGrupo(grupoId).map(aMiembro);
     },
     async actualizar(grupoId, d) {
       const g = grupos.find((x) => x.id === grupoId);
@@ -89,6 +103,21 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       if (d.nombre !== undefined) g.nombre = d.nombre;
       if (d.descripcion !== undefined) g.descripcion = d.descripcion;
       return toRow(g);
+    },
+    async agregarMiembro(grupoId, usuarioId) {
+      if (fila(grupoId, usuarioId)) {
+        throw new AppError(409, 'YA_ES_MIEMBRO', 'Ya es miembro del grupo');
+      }
+      insertarMiembro(grupoId, usuarioId, 'MIEMBRO');
+      return aMiembro(existente(grupoId, usuarioId));
+    },
+    async reactivarMiembro(grupoId, usuarioId) {
+      const m = existente(grupoId, usuarioId);
+      m.activo = true;
+      return aMiembro(m);
+    },
+    async desactivarMiembro(grupoId, usuarioId) {
+      existente(grupoId, usuarioId).activo = false;
     },
   };
 
