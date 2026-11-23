@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { email } from './auth.schemas.js';
+import { emailSchema } from './auth.schemas.js';
 
 const MENSAJE_NOMBRE = 'Poné un nombre de hasta 60 caracteres';
 
@@ -27,7 +27,9 @@ export const editarGrupoSchema = z.object({
   descripcion: descripcion.optional(),
 });
 
-export const agregarMiembroSchema = z.object({ email });
+export const agregarMiembroSchema = z.object({
+  email: emailSchema('Ingresá el email de la persona'),
+});
 
 export type CrearGrupoBody = z.infer<typeof crearGrupoSchema>;
 export type EditarGrupoBody = z.infer<typeof editarGrupoSchema>;

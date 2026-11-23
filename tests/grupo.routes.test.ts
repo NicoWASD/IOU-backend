@@ -144,6 +144,41 @@ describe('PATCH /api/grupos/:id', () => {
     expect(res.body.grupo).toMatchObject({ nombre: 'Depto', descripcion: null });
   });
 
+  it('con {} devuelve el grupo sin cambios; las claves extra se descartan', async () => {
+    const g = await crearGrupo({ nombre: 'Depto', descripcion: 'd' });
+    const vacio = await request(ctx.app).patch(`/api/grupos/${g.id}`).set(auth(sofi)).send({});
+    expect(vacio.status).toBe(200);
+    expect(vacio.body.grupo).toMatchObject({ nombre: 'Depto', descripcion: 'd' });
+    const extra = await request(ctx.app)
+      .patch(`/api/grupos/${g.id}`)
+      .set(auth(sofi))
+      .send({ archivado: true, moneda: 'USD', creadoPorId: tomi.id });
+    expect(extra.status).toBe(200);
+    expect(extra.body.grupo).toMatchObject({
+      archivado: false,
+      moneda: 'ARS',
+      creadoPor: { id: sofi.id },
+    });
+  });
+
+  it('400 con una descripción que no es texto', async () => {
+    const g = await crearGrupo();
+    const res = await request(ctx.app)
+      .patch(`/api/grupos/${g.id}`)
+      .set(auth(sofi))
+      .send({ descripcion: 123 });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details.descripcion).toBeDefined();
+  });
+
+  it('un grupo archivado se sigue pudiendo consultar (200, RN-15)', async () => {
+    const g = await crearGrupo();
+    ctx.grupos.archivar(g.id);
+    const res = await request(ctx.app).get(`/api/grupos/${g.id}`).set(auth(sofi));
+    expect(res.status).toBe(200);
+    expect(res.body.grupo.archivado).toBe(true);
+  });
+
   it('400 con un nombre inválido', async () => {
     const g = await crearGrupo();
     const res = await request(ctx.app)
@@ -208,6 +243,44 @@ describe('miembros', () => {
     const res = await agregar('no-es-mail');
     expect(res.status).toBe(400);
     expect(res.body.error.details.email).toBeDefined();
+  });
+
+  it('POST 400 sin email, con un mensaje que habla de la otra persona', async () => {
+    const res = await request(ctx.app)
+      .post(`/api/grupos/${grupoId}/miembros`)
+      .set(auth(sofi))
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.details.email).toBe('Ingresá el email de la persona');
+  });
+
+  it('un miembro dado de baja recibe 404 también en las rutas de miembros', async () => {
+    await agregar('tomi@mail.com').expect(201);
+    await agregar('ajeno@mail.com').expect(201);
+    await request(ctx.app)
+      .delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`)
+      .set(auth(sofi))
+      .expect(204);
+    const intentos = [
+      request(ctx.app).get(`/api/grupos/${grupoId}/miembros`),
+      request(ctx.app).post(`/api/grupos/${grupoId}/miembros`).send({ email: 'sofi@mail.com' }),
+      request(ctx.app).delete(`/api/grupos/${grupoId}/miembros/${ajeno.id}`),
+    ];
+    for (const intento of intentos) {
+      const res = await intento.set(auth(tomi));
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('GRUPO_NO_ENCONTRADO');
+    }
+  });
+
+  it('DELETE de alguien que ya está inactivo → 404 MIEMBRO_NO_ENCONTRADO', async () => {
+    await agregar('tomi@mail.com').expect(201);
+    const quitar = () =>
+      request(ctx.app).delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`).set(auth(sofi));
+    await quitar().expect(204);
+    const res = await quitar();
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('MIEMBRO_NO_ENCONTRADO');
   });
 
   it('POST 404 USUARIO_NO_ENCONTRADO (CA-10.2)', async () => {
@@ -364,13 +437,26 @@ describe('autenticación', () => {
   });
 
   it('ninguna respuesta incluye passwordHash', async () => {
-    const { id } = await crearGrupo();
-    await request(ctx.app)
+    const creado = await request(ctx.app)
+      .post('/api/grupos')
+      .set(auth(sofi))
+      .send({ nombre: 'Depto' });
+    const id = creado.body.grupo.id as string;
+    const agregado = await request(ctx.app)
       .post(`/api/grupos/${id}/miembros`)
       .set(auth(sofi))
-      .send({ email: 'tomi@mail.com' })
-      .expect(201);
+      .send({ email: 'tomi@mail.com' });
+    const editado = await request(ctx.app)
+      .patch(`/api/grupos/${id}`)
+      .set(auth(sofi))
+      .send({ nombre: 'Otro' });
+    for (const res of [creado, agregado]) {
+      expect(res.status).toBe(201);
+      expect(res.text).not.toMatch(/password/i);
+    }
+    expect(editado.text).not.toMatch(/password/i);
     const respuestas = await Promise.all([
+      Promise.resolve(editado),
       request(ctx.app).get('/api/grupos').set(auth(sofi)),
       request(ctx.app).get(`/api/grupos/${id}`).set(auth(sofi)),
       request(ctx.app).get(`/api/grupos/${id}/miembros`).set(auth(sofi)),
