@@ -10,13 +10,16 @@ datasource db {
 }
 
 model Usuario {
-  id            String         @id @default(uuid()) @db.Uuid
-  nombre        String         @db.VarChar(80)
-  email         String         @unique @db.VarChar(120)
-  passwordHash  String         @map("password_hash")
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  gruposCreados Grupo[]        @relation("GruposCreados")
-  membresias    MiembroGrupo[]
+  id              String               @id @default(uuid()) @db.Uuid
+  nombre          String               @db.VarChar(80)
+  email           String               @unique @db.VarChar(120)
+  passwordHash    String               @map("password_hash")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  gruposCreados   Grupo[]              @relation("GruposCreados")
+  membresias      MiembroGrupo[]
+  gastosPagados   Gasto[]              @relation("GastosPagados")
+  gastosCreados   Gasto[]              @relation("GastosCreados")
+  participaciones ParticipacionGasto[]
 
   @@map("usuarios")
 }
@@ -36,6 +39,7 @@ model Grupo {
   creadoPor   Usuario        @relation("GruposCreados", fields: [creadoPorId], references: [id])
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
   miembros    MiembroGrupo[]
+  gastos      Gasto[]
 
   @@map("grupos")
 }
@@ -52,4 +56,43 @@ model MiembroGrupo {
   @@id([grupoId, usuarioId])
   @@index([usuarioId])
   @@map("miembros_grupo")
+}
+
+enum TipoDivision {
+  IGUAL
+  MONTOS
+  PORCENTAJE
+}
+
+model Gasto {
+  id              String               @id @default(uuid()) @db.Uuid
+  grupoId         String               @map("grupo_id") @db.Uuid
+  descripcion     String               @db.VarChar(100)
+  montoCentavos   BigInt               @map("monto_centavos")
+  fecha           DateTime             @db.Date
+  pagadoPorId     String               @map("pagado_por") @db.Uuid
+  tipoDivision    TipoDivision         @map("tipo_division")
+  creadoPorId     String               @map("creado_por") @db.Uuid
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+  grupo           Grupo                @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  pagadoPor       Usuario              @relation("GastosPagados", fields: [pagadoPorId], references: [id])
+  creadoPor       Usuario              @relation("GastosCreados", fields: [creadoPorId], references: [id])
+  participaciones ParticipacionGasto[]
+
+  @@index([grupoId, fecha(sort: Desc), createdAt(sort: Desc)])
+  @@map("gastos")
+}
+
+model ParticipacionGasto {
+  gastoId       String   @map("gasto_id") @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  montoCentavos BigInt   @map("monto_centavos")
+  porcentaje    Decimal? @db.Decimal(5, 2)
+  gasto         Gasto    @relation(fields: [gastoId], references: [id], onDelete: Cascade)
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@id([gastoId, usuarioId])
+  @@index([usuarioId])
+  @@map("participaciones_gasto")
 }

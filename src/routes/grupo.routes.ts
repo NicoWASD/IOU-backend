@@ -1,4 +1,5 @@
 import { Router, type RequestHandler } from 'express';
+import { createGastoController } from '../controllers/gasto.controller.js';
 import { createGrupoController } from '../controllers/grupo.controller.js';
 import type { TokenService } from '../lib/tokens.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
@@ -8,6 +9,8 @@ import {
   crearGrupoSchema,
   editarGrupoSchema,
 } from '../schemas/grupo.schemas.js';
+import { nuevoGastoSchema } from '../schemas/gasto.schemas.js';
+import type { GastoService } from '../services/gasto.service.js';
 import type { GrupoService } from '../services/grupo.service.js';
 import type { MiembroService } from '../services/miembro.service.js';
 
@@ -15,6 +18,7 @@ import type { MiembroService } from '../services/miembro.service.js';
 export function grupoRouter(deps: {
   grupoService: GrupoService;
   miembroService: MiembroService;
+  gastoService: GastoService;
   tokens: TokenService;
   /** Límite de altas de miembros (evita enumerar emails). */
   limiterMiembros: RequestHandler;
@@ -34,5 +38,11 @@ export function grupoRouter(deps: {
     c.agregarMiembro,
   );
   router.delete('/:id/miembros/:usuarioId', c.quitarMiembro);
+  const g = createGastoController(deps.gastoService);
+  router.get('/:id/gastos', g.listar);
+  router.post('/:id/gastos', validate(nuevoGastoSchema), g.crear);
+  router.get('/:id/gastos/:gastoId', g.detalle);
+  router.put('/:id/gastos/:gastoId', validate(nuevoGastoSchema), g.editar);
+  router.delete('/:id/gastos/:gastoId', g.eliminar);
   return router;
 }

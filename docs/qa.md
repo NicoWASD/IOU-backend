@@ -11,6 +11,7 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | H0 · Fundaciones | 3 | 2 | 0 | 1 | back 10/10 · front 8/8 |
 | H1 · Landing y autenticación | 21 | 21 | 0 | 0 | back 34/34 · front 51/51 |
 | H2 · Grupos y miembros | 24 | 24 | 0 | 0 | back 125/125 · front 139/139 |
+| H3 · Gastos | 19 | 18 | 0 | 1 | back 155/155 · front 141/141 |
 
 ---
 
@@ -117,3 +118,32 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | Extra | Revisión de rama por un revisor nuevo | 0 críticos, 1 importante (corregido); menores pendientes: varias pestañas con distinto usuario, h1 en el error del detalle, mensaje de saldo con nombre, tests del repo Prisma, saldos en lote | ✅ |
 
 **Pendiente del H0:** CA-00.3 (Docker local).
+
+---
+
+## H3 · Gastos (HU-12 a HU-18)
+
+**Fecha:** 2026-11-23 · **Entorno:** local contra Neon `dev` (falta la verificación en producción después del merge)
+
+| ID | Criterio | Evidencia | Estado |
+|---|---|---|---|
+| CA-12.1 | $300 entre 3 → $100 c/u | Test de dominio y test de ruta (PUT a $300) | ✅ |
+| CA-12.2 | $100 entre 3 → 33,34 / 33,33 / 33,33 | Tests de dominio (CB-01) y de ruta | ✅ |
+| CA-12.3 | Monto ≤ 0, con 3 decimales o fecha futura → rechazo | Tests de ruta: 400 `VALIDATION_ERROR` y 422 `FECHA_FUTURA` | ✅ |
+| CA-12.4 | Sin participantes → rechazo | Test 422 `PARTICIPANTES_INVALIDOS`; en la UI, Guardar queda deshabilitado | ✅ |
+| CA-12.5 | Por defecto pago yo y están todos los activos | `GastoForm` (estado inicial) y test del front (`pagadoPor: u1`) | ✅ |
+| CA-13.1 | Montos que suman el total → se registra | Test de ruta 201 y test del front | ✅ |
+| CA-13.2 | Diferencia en vivo y 422 con la diferencia | Test del front ("Faltan $ 40" → "Cierra justo") y test 422 `details.diferencia "0.01"` | ✅ |
+| CA-14.1 | 60/40 sobre $1000 → $600/$400 | Tests de dominio y de ruta | ✅ |
+| CA-14.2 | Porcentajes que no suman 100 → rechazo (CB-06) | Test 422 `SUMA_PORCENTAJES_INVALIDA` `details.suma "99.99"` | ✅ |
+| CA-14.3 | La suma de las participaciones da exacto el total | Test de dominio; local contra `dev`: $99.999.999,99 al 33,33/66,67 suma exacto | ✅ |
+| CA-15.1 | Lista del más reciente al más antiguo | Test de ruta (orden por fecha) y test del front (por día, pagador, monto y mi parte) | ✅ |
+| CA-15.2 | Más de 20 → paginada | Test de ruta (`pageSize`, `total`); "Ver más gastos" en la UI | ✅ |
+| CA-15.3 | Sin gastos → vacío con "Agregar un gasto" | Test de `GrupoPage` | ✅ |
+| CA-16.1 | El detalle muestra el tipo y las participaciones | Test del front | ✅ |
+| CA-17.1 / 17.2 / 17.3 | Edita creador o admin; 403 a otro; rechazo con miembro inactivo | Tests de ruta 200, 403 `SIN_PERMISO`, 409 `GASTO_CON_MIEMBRO_INACTIVO`; local contra `dev`: 403 y 200 | ✅ |
+| CA-18.1 | Eliminar → desaparece | Test de ruta 204 y lista vacía; local contra `dev` | ✅ |
+| CA-18.2 | La UI pide confirmación | `alert-dialog` en el detalle (sin test automático) | ⏳ |
+
+**Decisiones:** `monto_centavos` es `bigint` porque el tope de RN-01 (9.999.999.999 centavos) no entra en `integer` (spec actualizada). El **Deshacer** del aviso queda fuera del H3.
+**Ejecución liviana a pedido del usuario:** sin subagentes ni revisor por tarea; la revisión de UI en el navegador queda para la validación del hito.
