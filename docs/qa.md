@@ -9,7 +9,7 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | Hito | CA totales | ✅ | ❌ | ⏳ | Tests automatizados |
 |---|---|---|---|---|---|
 | H0 · Fundaciones | 3 | 2 | 0 | 1 | back 10/10 · front 8/8 |
-| H1 · Landing y autenticación | 21 | 20 | 0 | 1 | back 34/34 · front 51/51 |
+| H1 · Landing y autenticación | 21 | 21 | 0 | 0 | back 34/34 · front 51/51 |
 | H2 · Grupos y miembros | 24 | 24 | 0 | 0 | back 125/125 · front 139/139 |
 
 ---
@@ -77,7 +77,7 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | CA-30.1 | Título y "Crear un grupo gratis" sin scroll a 375 y 1280 px | Navegador: visibles en el primer pantallazo a 390 y 1440 px | ✅ |
 | CA-30.2 | La demo recalcula los vales con el redondeo de la spec | Tests `LandingPage.test.tsx` (36.000/4 → 9.000; 100/3 → 33,33) y `money.test.ts` | ✅ |
 | CA-30.3 | Con sesión, el botón dice "Ir a mis grupos" | Test `LandingPage.test.tsx` | ✅ |
-| CA-30.4 | Lighthouse mobile ≥ 90 en Performance y Accessibility | Prod (antes de la carga diferida): Performance **89**, Accessibility 100, Best practices 100, SEO 91. Se separó el código de la app de la landing (bundle 660 → 292 KB); falta medir en producción | ⏳ |
+| CA-30.4 | Lighthouse mobile ≥ 90 en Performance y Accessibility | Prod, después de la carga diferida (bundle 660 → 292 KB), 3 corridas: Performance 96 / 90 / 87 (**mediana 90**), Accessibility 100 en las tres, LCP 2,3–2,6 s. Antes era 89. Queda justo: mejorar en el H5 (precarga de fuentes) | ✅ |
 | Extra | Límite de intentos en login/registro | Test: intento 11 → 429 `DEMASIADOS_INTENTOS` | ✅ |
 | Extra | Email normalizado (`" Sofi@Mail.com "`) | Test de rutas y navegador | ✅ |
 | Extra | Contraseña de 73 caracteres → 400 | Test | ✅ |
@@ -116,4 +116,4 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | Extra | Errores de estado refrescan la lista (revisión M1) | Tests con 4 códigos | ✅ |
 | Extra | Revisión de rama por un revisor nuevo | 0 críticos, 1 importante (corregido); menores pendientes: varias pestañas con distinto usuario, h1 en el error del detalle, mensaje de saldo con nombre, tests del repo Prisma, saldos en lote | ✅ |
 
-**Pendientes del H1:** CA-30.4 (medir Lighthouse en producción con la carga diferida). **Pendiente del H0:** CA-00.3 (Docker local).
+**Pendiente del H0:** CA-00.3 (Docker local).
