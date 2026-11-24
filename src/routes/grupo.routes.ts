@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { createGrupoController } from '../controllers/grupo.controller.js';
 import type { TokenService } from '../lib/tokens.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
@@ -16,6 +16,8 @@ export function grupoRouter(deps: {
   grupoService: GrupoService;
   miembroService: MiembroService;
   tokens: TokenService;
+  /** Límite de altas de miembros (evita enumerar emails). */
+  limiterMiembros: RequestHandler;
 }): Router {
   const router = Router();
   const c = createGrupoController(deps.grupoService, deps.miembroService);
@@ -25,7 +27,12 @@ export function grupoRouter(deps: {
   router.get('/:id', c.detalle);
   router.patch('/:id', validate(editarGrupoSchema), c.editar);
   router.get('/:id/miembros', c.listarMiembros);
-  router.post('/:id/miembros', validate(agregarMiembroSchema), c.agregarMiembro);
+  router.post(
+    '/:id/miembros',
+    deps.limiterMiembros,
+    validate(agregarMiembroSchema),
+    c.agregarMiembro,
+  );
   router.delete('/:id/miembros/:usuarioId', c.quitarMiembro);
   return router;
 }

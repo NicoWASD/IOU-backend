@@ -467,3 +467,21 @@ describe('autenticación', () => {
     }
   });
 });
+
+describe('límite de intentos al agregar miembros', () => {
+  it('el intento 31 en la ventana → 429 DEMASIADOS_INTENTOS (evita enumerar emails)', async () => {
+    const app = makeTestApp({ rateLimit: true }).app;
+    // el registro también tiene límite (10): se registra una sola cuenta
+    const admin = await registrar(app, 'Admin', 'admin-rl@mail.com');
+    const g = await request(app).post('/api/grupos').set(auth(admin)).send({ nombre: 'Límite' });
+    const intento = (i: number) =>
+      request(app)
+        .post(`/api/grupos/${g.body.grupo.id}/miembros`)
+        .set(auth(admin))
+        .send({ email: `nadie-${i}@mail.com` });
+    for (let i = 0; i < 30; i++) expect((await intento(i)).status).toBe(404);
+    const res = await intento(30);
+    expect(res.status).toBe(429);
+    expect(res.body.error.code).toBe('DEMASIADOS_INTENTOS');
+  });
+});
