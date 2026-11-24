@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { grupoRouter } from './routes/grupo.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import type { AuthService } from './services/auth.service.js';
+import type { GastoService } from './services/gasto.service.js';
 import type { GrupoService } from './services/grupo.service.js';
 import type { MiembroService } from './services/miembro.service.js';
 
@@ -17,6 +18,7 @@ export type AppDeps = {
   authService: AuthService;
   grupoService: GrupoService;
   miembroService: MiembroService;
+  gastoService: GastoService;
   tokens: TokenService;
   /** Límites de intentos (/auth y altas de miembros). Activos por defecto; los tests los apagan. */
   rateLimit?: boolean;
@@ -49,6 +51,7 @@ export function createApp(deps: AppDeps): express.Express {
     grupoRouter({
       grupoService: deps.grupoService,
       miembroService: deps.miembroService,
+      gastoService: deps.gastoService,
       tokens: deps.tokens,
       limiterMiembros: deps.rateLimit === false ? passThrough : createMiembrosRateLimit(),
     }),
