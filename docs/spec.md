@@ -74,7 +74,7 @@ Grupo   1──* Pago  (de_usuario → a_usuario)
 | id | PK | |
 | grupo_id | FK Grupo | |
 | descripcion | varchar(100) | obligatorio |
-| monto_centavos | integer | > 0 |
+| monto_centavos | bigint | > 0 (el tope de RN-01 no entra en `integer`) |
 | fecha | date | no futura |
 | pagado_por | FK Usuario | debe ser miembro activo |
 | tipo_division | enum `IGUAL` \| `MONTOS` \| `PORCENTAJE` | |
@@ -86,7 +86,7 @@ Grupo   1──* Pago  (de_usuario → a_usuario)
 |---|---|---|
 | gasto_id | FK Gasto | PK compuesta con `usuario_id` |
 | usuario_id | FK Usuario | |
-| monto_centavos | integer | ≥ 0; la suma de un gasto es igual a `Gasto.monto_centavos` |
+| monto_centavos | bigint | ≥ 0; la suma de un gasto es igual a `Gasto.monto_centavos` |
 | porcentaje | numeric(5,2) | solo si `tipo_division = PORCENTAJE` |
 
 ### Pago (liquidación)
@@ -96,7 +96,7 @@ Grupo   1──* Pago  (de_usuario → a_usuario)
 | grupo_id | FK Grupo | |
 | de_usuario | FK Usuario | quien paga |
 | a_usuario | FK Usuario | quien recibe; distinto de `de_usuario` |
-| monto_centavos | integer | > 0 |
+| monto_centavos | bigint | > 0 (el tope de RN-01 no entra en `integer`) |
 | fecha | date | no futura |
 | creado_por | FK Usuario | |
 | created_at | timestamp | |
