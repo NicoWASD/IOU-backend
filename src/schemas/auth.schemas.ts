@@ -1,11 +1,15 @@
 import { z } from 'zod';
 
-const email = z
-  .string({ error: 'Ingresá tu email' })
-  .trim()
-  .toLowerCase()
-  .max(120, 'El email puede tener hasta 120 caracteres')
-  .pipe(z.email({ error: 'El email no es válido' }));
+/** Email con las reglas del H1 (trim, minúsculas, hasta 120). `faltante` es el mensaje si no viene. */
+export const emailSchema = (faltante = 'Ingresá tu email') =>
+  z
+    .string({ error: faltante })
+    .trim()
+    .toLowerCase()
+    .max(120, 'El email puede tener hasta 120 caracteres')
+    .pipe(z.email({ error: 'El email no es válido' }));
+
+const email = emailSchema();
 
 export const registerSchema = z.object({
   nombre: z

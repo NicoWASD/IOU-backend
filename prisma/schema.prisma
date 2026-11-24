@@ -10,11 +10,46 @@ datasource db {
 }
 
 model Usuario {
-  id           String   @id @default(uuid()) @db.Uuid
-  nombre       String   @db.VarChar(80)
-  email        String   @unique @db.VarChar(120)
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id            String         @id @default(uuid()) @db.Uuid
+  nombre        String         @db.VarChar(80)
+  email         String         @unique @db.VarChar(120)
+  passwordHash  String         @map("password_hash")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  gruposCreados Grupo[]        @relation("GruposCreados")
+  membresias    MiembroGrupo[]
 
   @@map("usuarios")
+}
+
+enum Rol {
+  ADMIN
+  MIEMBRO
+}
+
+model Grupo {
+  id          String         @id @default(uuid()) @db.Uuid
+  nombre      String         @db.VarChar(60)
+  descripcion String?        @db.VarChar(200)
+  moneda      String         @default("ARS") @db.Char(3)
+  archivado   Boolean        @default(false)
+  creadoPorId String         @map("creado_por") @db.Uuid
+  creadoPor   Usuario        @relation("GruposCreados", fields: [creadoPorId], references: [id])
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  miembros    MiembroGrupo[]
+
+  @@map("grupos")
+}
+
+model MiembroGrupo {
+  grupoId   String   @map("grupo_id") @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  rol       Rol      @default(MIEMBRO)
+  activo    Boolean  @default(true)
+  fechaAlta DateTime @default(now()) @map("fecha_alta") @db.Timestamptz
+  grupo     Grupo    @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@id([grupoId, usuarioId])
+  @@index([usuarioId])
+  @@map("miembros_grupo")
 }

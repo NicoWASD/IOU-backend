@@ -1,11 +1,11 @@
 import { rateLimit } from 'express-rate-limit';
 import { AppError } from '../lib/errors.js';
 
-/** 10 intentos cada 15 minutos por IP en login y registro. */
-export function createAuthRateLimit() {
+/** Limitador por IP en ventanas de 15 minutos, con el error en el formato de la API. */
+export function createRateLimit(limit: number) {
   return rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 10,
+    limit,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     handler: (_req, _res, next) => {
@@ -19,3 +19,9 @@ export function createAuthRateLimit() {
     },
   });
 }
+
+/** 10 intentos cada 15 minutos por IP en login y registro. */
+export const createAuthRateLimit = () => createRateLimit(10);
+
+/** 30 altas de miembros cada 15 minutos por IP: evita usar el alta para enumerar emails. */
+export const createMiembrosRateLimit = () => createRateLimit(30);

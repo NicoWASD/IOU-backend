@@ -3,17 +3,22 @@ import express, { type RequestHandler } from 'express';
 import type { TokenService } from './lib/tokens.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFound } from './middlewares/notFound.js';
-import { createAuthRateLimit } from './middlewares/rateLimit.js';
+import { createAuthRateLimit, createMiembrosRateLimit } from './middlewares/rateLimit.js';
 import { authRouter } from './routes/auth.routes.js';
+import { grupoRouter } from './routes/grupo.routes.js';
 import { healthRouter } from './routes/health.routes.js';
 import type { AuthService } from './services/auth.service.js';
+import type { GrupoService } from './services/grupo.service.js';
+import type { MiembroService } from './services/miembro.service.js';
 
 export type AppDeps = {
   checkDb: () => Promise<void>;
   corsOrigins: string[];
   authService: AuthService;
+  grupoService: GrupoService;
+  miembroService: MiembroService;
   tokens: TokenService;
-  /** Límite de intentos en /auth. Activo por defecto; los tests lo apagan. */
+  /** Límites de intentos (/auth y altas de miembros). Activos por defecto; los tests los apagan. */
   rateLimit?: boolean;
 };
 
@@ -37,6 +42,15 @@ export function createApp(deps: AppDeps): express.Express {
       authService: deps.authService,
       tokens: deps.tokens,
       limiter: deps.rateLimit === false ? passThrough : createAuthRateLimit(),
+    }),
+  );
+  app.use(
+    '/api/grupos',
+    grupoRouter({
+      grupoService: deps.grupoService,
+      miembroService: deps.miembroService,
+      tokens: deps.tokens,
+      limiterMiembros: deps.rateLimit === false ? passThrough : createMiembrosRateLimit(),
     }),
   );
   app.use(notFound);
