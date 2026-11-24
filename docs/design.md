@@ -37,6 +37,9 @@ La paleta sale de los objetos del vale: papel blanco, tinta de birome azul, y ve
 - Todo par texto/fondo cumple **WCAG AA**: 4,5:1 para texto normal y 3:1 para texto grande o íconos.
 - **El verde y el rojo nunca son la única señal.** Siempre van con texto ("Te deben" / "Debés") y signo (+ / −). Así funcionan para personas con daltonismo.
 - Sin gradientes ni sombras de color. La única sombra es `0 1px 0 rule` en las tarjetas y una sombra suave en los diálogos.
+- **"Saldado" en oscuro:** el resaltador cubre todo el alto del texto y la tinta pasa a `#1B1E25`. Con texto claro sobre la franja amarilla, el contraste era de alrededor de 1,2:1.
+- **Montos:** van con cifras proporcionales. Con `tabular-nums`, Schibsted Grotesk separa los puntos y las comas ("$ 380 . 300 , 50"). Para alinear columnas, se alinea a la derecha.
+- **Avatares:** 6 tonos neutros sin violeta (`--av1` a `--av6`).
 - El modo oscuro está **soportado desde el principio** con los tokens. Sigue la preferencia del sistema y se puede cambiar a mano.
 
 ## 3. Tipografía
