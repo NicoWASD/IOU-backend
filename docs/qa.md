@@ -123,7 +123,9 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 
 ## H3 · Gastos (HU-12 a HU-18)
 
-**Fecha:** 2026-11-23 · **Entorno:** local contra Neon `dev` (falta la verificación en producción después del merge)
+**Fecha:** 2026-11-23 · **Entorno:** producción (después del merge de los PRs #7 back y #7 front) y local contra `dev`
+
+**Producción (API, usuarios `qa-h3*@iou.test`):** 201 con 33,33/33,33/33,34 (CA-12.2) · 400 con 3 decimales y 422 `FECHA_FUTURA` (CA-12.3) · 422 `PARTICIPANTES_INVALIDOS` (CA-12.4) · 422 `SUMA_PARTICIPACIONES_INVALIDA` con `diferencia "0.01"` (CA-13.2) · 60/40 de 000 → 600/400 (CA-14.1) · 422 `SUMA_PORCENTAJES_INVALIDA` (CA-14.2) · lista y detalle con `miParte` y `puedeEditar: false` para otro miembro (CA-15.1, CA-16.1) · 403 `SIN_PERMISO`, 200 al editar y 409 `GASTO_CON_MIEMBRO_INACTIVO` (CA-17.x) · 204 al eliminar (CA-18.1). Front en Vercel: 200.
 
 | ID | Criterio | Evidencia | Estado |
 |---|---|---|---|
