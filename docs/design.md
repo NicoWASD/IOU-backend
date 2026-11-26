@@ -240,3 +240,12 @@ Solo para acciones destructivas o difíciles de revertir: eliminar un gasto, qui
   - Nunca cerrar el corte, invertir los colores de las mitades, deformarlo ni rotarlo.
 - **En la UI:** `<Logo />` en React, que hereda los tokens del tema. Al registrar el primer pago de un grupo se puede repetir el corte como guiño, sin exagerar el uso.
 - Hoja de marca completa: `IOU-client/docs/marca-iou.html`.
+
+## 13. H6: navegación, movimiento, Ticket y guía
+
+- **Barra inferior (< 1024 px):** fija, 64 px + `env(safe-area-inset-bottom)`, fondo `surface` con borde superior `rule`. Tres ítems con icono y texto: Grupos, Invitaciones (badge con la cantidad), Configuración. El activo va en `birome`. En desktop los mismos links van en la barra superior.
+- **Volver:** el grupo tiene «← Mis grupos» (h-11) arriba del título.
+- **Movimiento:** al apretar, los botones hacen `scale(.97)` en 120 ms ease-out. Las pantallas entran con fade + 8 px hacia arriba en 180 ms. Con `prefers-reduced-motion` no hay desplazamiento.
+- **Ticket (mascota):** un recibo pixelado con dientes abajo, grilla de 8 px. Paleta `#7C3AED` cuerpo, `#4C1D95` boca, `#DDD6FE` renglones, `#1E1B4B` ojos. Poses: `quieto`, `parpadea` (cada 4 s), `camina` (ida y vuelta en estados vacíos) y `festeja` (salto cuando están todos al día). Es decorativo: `aria-hidden`.
+- **Guía de primer uso:** oscurece la pantalla menos el botón objetivo (recorte), con un globo y Ticket al lado. El usuario toca el botón real para avanzar. Siempre hay «Saltar guía». El globo es `aria-live="polite"`.
+- **Medios de cobro al saldar:** lista con plataforma, alias en mono y botón «Copiar» (toast «Copiado»).

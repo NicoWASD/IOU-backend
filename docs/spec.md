@@ -43,7 +43,56 @@ Grupo   1──* Pago  (de_usuario → a_usuario)
 | Campo | Tipo | Restricciones |
 |---|---|---|
 | id | UUID / serial | PK |
-| nombre | varchar(80) | obligatorio |
+| usuario | varchar(20) | obligatorio, único, `^[a-z0-9_.]{3,20}# Spec — IOU (gastos compartidos)
+
+> Versión 0.1 · Borrador · Nombre: IOU ("I owe you")
+
+## 1. Descripción
+
+**IOU** es una aplicación web para que grupos de personas (amigos de viaje, compañeros de departamento, una pareja) registren los gastos que pagan y vean en todo momento **cuánto pagó cada uno, cuánto le corresponde y quién le debe a quién**. También sugiere la **mínima cantidad de transferencias** para dejar las cuentas en cero y permite registrar esos pagos.
+
+### Problema que resuelve
+Cuando varias personas comparten gastos, cada una paga cosas distintas y en montos distintos. Llevar la cuenta a mano es propenso a errores y discusiones. El sistema centraliza los gastos y hace el cálculo automáticamente.
+
+### Usuarios
+- **Usuario registrado:** crea grupos, carga gastos y registra pagos.
+- **Administrador de grupo:** es el usuario que creó el grupo. Además, gestiona los miembros y puede archivar el grupo.
+
+## 2. Alcance
+
+### Dentro del alcance (MVP)
+1. Registro e inicio de sesión (email + contraseña).
+2. Crear grupos, editarlos y archivarlos.
+3. Agregar y quitar miembros (usuarios ya registrados, buscados por email).
+4. Cargar, editar y eliminar gastos con tres modos de división: **partes iguales**, **montos exactos** y **porcentajes**.
+5. Ver el balance de cada miembro del grupo.
+6. Ver la liquidación sugerida (quién le paga a quién y cuánto).
+7. Registrar pagos (liquidaciones) entre miembros.
+
+### Fuera del alcance
+- Múltiples monedas o conversión de moneda (cada grupo usa **una sola moneda**).
+- Invitaciones por email a personas no registradas.
+- Notificaciones, adjuntar comprobantes y gastos recurrentes.
+- Integración con medios de pago reales (los pagos se **registran**, no se ejecutan).
+
+## 3. Modelo de datos
+
+```
+Usuario 1──* MiembroGrupo *──1 Grupo
+Grupo   1──* Gasto 1──* ParticipacionGasto *──1 Usuario
+Gasto   *──1 Usuario (pagado_por)
+Grupo   1──* Pago  (de_usuario → a_usuario)
+```
+
+### Usuario
+| Campo | Tipo | Restricciones |
+|---|---|---|
+| id | UUID / serial | PK |
+, se guarda en minúsculas (RN-19) |
+| nombre | varchar(80) | nombre visible, derivado: «nombre_real apellido» o el usuario (RN-19) |
+| nombre_real | varchar(40) | opcional (nombre de pila) |
+| apellido | varchar(40) | opcional |
+| tutorial_visto | boolean | default false (guía de primer uso) |
 | email | varchar(120) | obligatorio, único, formato válido, se guarda en minúsculas |
 | password_hash | varchar | bcrypt; nunca se devuelve en la API |
 | created_at | timestamp | |
@@ -149,7 +198,7 @@ Resultado: como máximo **n − 1 transferencias** para un grupo de n miembros c
 | RN-08 | Solo quien creó el gasto o el admin del grupo pueden editarlo o eliminarlo. |
 | RN-09 | En un pago, `de_usuario ≠ a_usuario` y ambos son miembros activos. |
 | RN-10 | Un pago no puede superar la deuda actual del que paga (`|balance|` si es negativo) ni el crédito actual del que recibe. |
-| RN-11 | Solo el admin agrega o quita miembros. Al agregar, el usuario tiene que existir (se busca por email) y no puede ser ya miembro activo. |
+| RN-11 | Solo el admin invita o quita miembros. Desde el H6 el alta es por invitación (RN-20). |
 | RN-12 | No se puede quitar a un miembro cuyo balance sea ≠ 0. |
 | RN-13 | El admin no puede quitarse a sí mismo del grupo. |
 | RN-14 | Solo el admin archiva el grupo, y solo si **todos** los balances están en 0. |
@@ -157,6 +206,10 @@ Resultado: como máximo **n − 1 transferencias** para un grupo de n miembros c
 | RN-16 | Solo los miembros de un grupo pueden verlo; el resto recibe 403 o 404. |
 | RN-17 | No se puede editar un gasto si alguno de sus participantes o su pagador ya no es miembro activo. |
 | RN-18 | El email de un usuario es único; la contraseña tiene al menos 8 caracteres. |
+| RN-19 | El `usuario` es único sin distinguir mayúsculas, de 3 a 20 caracteres `a-z 0-9 _ .`. El nombre visible es «Nombre Apellido» si los cargó; si no, el `usuario`. El email nunca se muestra en búsquedas. |
+| RN-20 | Solo el admin invita, a un usuario que no sea miembro activo ni tenga una invitación pendiente en el grupo. Solo el invitado acepta o rechaza (para el resto, 404). Al aceptar se da el alta o se reactiva la membresía. Un grupo archivado no invita ni acepta. |
+| RN-21 | Cada usuario tiene como máximo 5 medios de cobro (plataforma + alias/CVU + nota). |
+| RN-22 | Los medios de cobro de alguien solo los ve quien comparte con esa persona un grupo donde ambos están activos; el resto recibe 404. |
 
 ## 6. Casos borde
 
@@ -176,6 +229,8 @@ Resultado: como máximo **n − 1 transferencias** para un grupo de n miembros c
 | CB-12 | Monto con más de 2 decimales (`10.555`) o negativo | Error 400. |
 | CB-13 | Grupo con un solo miembro | Funciona; la liquidación sugerida queda vacía. |
 | CB-14 | Agregar a un miembro que había sido quitado antes | Se reactiva su `MiembroGrupo` (no se duplica). |
+| CB-15 | Se invita a alguien que fue miembro y se dio de baja | Al aceptar se reactiva (como CB-14). |
+| CB-16 | Se archiva el grupo con invitaciones pendientes | Aceptar responde 409 `GRUPO_ARCHIVADO`. |
 
 ## 7. API REST
 
@@ -192,7 +247,12 @@ Base: `/api` · Autenticación: `Authorization: Bearer <JWT>` en todas las rutas
 | PATCH | `/grupos/:id` | Editar nombre o descripción (admin) |
 | POST | `/grupos/:id/archivar` | Archivar (RN-14) |
 | GET | `/grupos/:id/miembros` | Listar miembros |
-| POST | `/grupos/:id/miembros` | Agregar `{ email }` (RN-11) |
+| POST | `/grupos/:id/invitaciones` | Invitar `{ usuarioId }` (RN-20) |
+| GET | `/invitaciones` | Mis invitaciones pendientes |
+| POST | `/invitaciones/:id/aceptar` · `/rechazar` | Responder una invitación |
+| GET | `/usuarios/buscar?q=` | Buscar por usuario |
+| GET · PATCH | `/me` · PUT `/me/medios` | Perfil y medios de cobro |
+| GET | `/usuarios/:id/medios` | Medios de cobro de alguien (RN-22) |
 | DELETE | `/grupos/:id/miembros/:usuarioId` | Quitar (RN-12, RN-13) |
 | GET | `/grupos/:id/gastos` | Listar (paginado, el más reciente primero) |
 | POST | `/grupos/:id/gastos` | Crear |
