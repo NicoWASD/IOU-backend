@@ -4,10 +4,12 @@ import { createApp, type AppDeps } from '../../src/app.js';
 import type { SaldoProvider } from '../../src/domain/grupo.js';
 import { createTokenService } from '../../src/lib/tokens.js';
 import { createAuthService } from '../../src/services/auth.service.js';
+import { createBalanceService, createSaldoProvider } from '../../src/services/balance.service.js';
 import { createGastoService } from '../../src/services/gasto.service.js';
-import { ceroSaldos, createGrupoService } from '../../src/services/grupo.service.js';
+import { createGrupoService } from '../../src/services/grupo.service.js';
 import { createMiembroService } from '../../src/services/miembro.service.js';
 import { createMemoryGastoRepository } from './memoryGastos.js';
+import { createMemoryBalanceRepository, createMemoryPagoRepository } from './memoryPagos.js';
 import { createMemoryGrupoRepository } from './memoryGrupos.js';
 import { createMemoryUsuarioRepository } from './memoryUsuarios.js';
 
@@ -15,17 +17,20 @@ export const TEST_SECRET = 'x'.repeat(32);
 
 /**
  * App con repositorios en memoria (grupos comparte el de usuarios) y JWT real.
- * El límite de intentos viene apagado. `saldos` reemplaza al SaldoProvider (por defecto, todo en 0).
+ * El límite de intentos viene apagado. `saldos` reemplaza al SaldoProvider (por defecto, el real).
  */
 export function makeTestApp(
   overrides: Partial<AppDeps> & { saldos?: SaldoProvider; hoy?: () => string } = {},
 ) {
-  const { saldos = ceroSaldos, hoy = () => '2026-06-15', ...appOverrides } = overrides;
+  const { saldos: saldosOverride, hoy = () => '2026-06-15', ...appOverrides } = overrides;
   const tokens = createTokenService({ secret: TEST_SECRET, expiresIn: '1h' });
   const usuarios = createMemoryUsuarioRepository();
   const grupos = createMemoryGrupoRepository(usuarios);
-  const grupoService = createGrupoService({ grupos, saldos });
   const gastos = createMemoryGastoRepository(usuarios);
+  const pagos = createMemoryPagoRepository(usuarios);
+  const balances = createMemoryBalanceRepository(gastos, pagos);
+  const saldos = saldosOverride ?? createSaldoProvider(balances);
+  const grupoService = createGrupoService({ grupos, saldos });
   const deps: AppDeps = {
     checkDb: async () => {},
     corsOrigins: ['http://localhost:5173'],
@@ -33,6 +38,7 @@ export function makeTestApp(
     grupoService,
     miembroService: createMiembroService({ grupoService, grupos, usuarios, saldos }),
     gastoService: createGastoService({ grupoService, grupos, gastos, hoy }),
+    balanceService: createBalanceService({ grupoService, grupos, balances, pagos, hoy }),
     tokens,
     rateLimit: false,
     ...appOverrides,

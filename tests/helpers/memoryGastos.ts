@@ -64,5 +64,5 @@ export function createMemoryGastoRepository(usuarios: { all(): UsuarioConHash[] 
       );
     },
   };
-  return repo;
+  return { ...repo, all: () => filas };
 }

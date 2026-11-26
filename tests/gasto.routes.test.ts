@@ -174,8 +174,19 @@ describe('GET, PUT y DELETE', () => {
   });
 
   it('409 GASTO_CON_MIEMBRO_INACTIVO (RN-17, CA-17.3)', async () => {
-    const id = (await crear(igual())).body.gasto.id;
-    await request(ctx.app).delete(`/api/grupos/${grupoId}/miembros/${juli.id}`).set(auth(sofi));
+    // Juli participa con $0: queda sin saldo y se la puede quitar (RN-12)
+    const sinSaldo = igual({
+      tipoDivision: 'MONTOS',
+      participantes: [
+        { usuarioId: sofi.id, monto: '100' },
+        { usuarioId: juli.id, monto: '0' },
+      ],
+    });
+    const id = (await crear(sinSaldo)).body.gasto.id;
+    const baja = await request(ctx.app)
+      .delete(`/api/grupos/${grupoId}/miembros/${juli.id}`)
+      .set(auth(sofi));
+    expect(baja.status).toBe(204);
     const res = await request(ctx.app)
       .put(url(`/${id}`))
       .set(auth(sofi))

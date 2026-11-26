@@ -20,6 +20,9 @@ model Usuario {
   gastosPagados   Gasto[]              @relation("GastosPagados")
   gastosCreados   Gasto[]              @relation("GastosCreados")
   participaciones ParticipacionGasto[]
+  pagosEnviados   Pago[]               @relation("PagosEnviados")
+  pagosRecibidos  Pago[]               @relation("PagosRecibidos")
+  pagosCreados    Pago[]               @relation("PagosCreados")
 
   @@map("usuarios")
 }
@@ -40,6 +43,7 @@ model Grupo {
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
   miembros    MiembroGrupo[]
   gastos      Gasto[]
+  pagos       Pago[]
 
   @@map("grupos")
 }
@@ -95,4 +99,22 @@ model ParticipacionGasto {
   @@id([gastoId, usuarioId])
   @@index([usuarioId])
   @@map("participaciones_gasto")
+}
+
+model Pago {
+  id            String   @id @default(uuid()) @db.Uuid
+  grupoId       String   @map("grupo_id") @db.Uuid
+  deId          String   @map("de_usuario") @db.Uuid
+  aId           String   @map("a_usuario") @db.Uuid
+  montoCentavos BigInt   @map("monto_centavos")
+  fecha         DateTime @db.Date
+  creadoPorId   String   @map("creado_por") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  grupo         Grupo    @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  de            Usuario  @relation("PagosEnviados", fields: [deId], references: [id])
+  a             Usuario  @relation("PagosRecibidos", fields: [aId], references: [id])
+  creadoPor     Usuario  @relation("PagosCreados", fields: [creadoPorId], references: [id])
+
+  @@index([grupoId, fecha(sort: Desc)])
+  @@map("pagos")
 }
