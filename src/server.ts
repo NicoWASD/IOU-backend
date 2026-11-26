@@ -2,12 +2,17 @@ import { createApp } from './app.js';
 import { loadEnv, type Env } from './config/env.js';
 import { checkDb, prisma } from './db/prisma.js';
 import { createTokenService } from './lib/tokens.js';
+import {
+  createPrismaBalanceRepository,
+  createPrismaPagoRepository,
+} from './repositories/pago.repository.js';
 import { createPrismaGastoRepository } from './repositories/gasto.repository.js';
 import { createPrismaGrupoRepository } from './repositories/grupo.repository.js';
 import { createPrismaUsuarioRepository } from './repositories/usuario.repository.js';
 import { createAuthService } from './services/auth.service.js';
+import { createBalanceService, createSaldoProvider } from './services/balance.service.js';
 import { createGastoService } from './services/gasto.service.js';
-import { ceroSaldos, createGrupoService } from './services/grupo.service.js';
+import { createGrupoService } from './services/grupo.service.js';
 import { createMiembroService } from './services/miembro.service.js';
 
 let env: Env;
@@ -22,9 +27,16 @@ const tokens = createTokenService({ secret: env.JWT_SECRET, expiresIn: env.JWT_E
 const usuarios = createPrismaUsuarioRepository(prisma);
 const grupos = createPrismaGrupoRepository(prisma);
 const authService = createAuthService({ usuarios, tokens });
-// Saldos en 0 hasta el H4, que calcula los balances reales
-const grupoService = createGrupoService({ grupos, saldos: ceroSaldos });
-const miembroService = createMiembroService({ grupoService, grupos, usuarios, saldos: ceroSaldos });
+const balances = createPrismaBalanceRepository(prisma);
+const saldos = createSaldoProvider(balances);
+const grupoService = createGrupoService({ grupos, saldos });
+const miembroService = createMiembroService({ grupoService, grupos, usuarios, saldos });
+const balanceService = createBalanceService({
+  grupoService,
+  grupos,
+  balances,
+  pagos: createPrismaPagoRepository(prisma),
+});
 const gastoService = createGastoService({
   grupoService,
   grupos,
@@ -39,6 +51,7 @@ const app = createApp({
   grupoService,
   miembroService,
   gastoService,
+  balanceService,
   tokens,
 });
 app.listen(env.PORT, () => {

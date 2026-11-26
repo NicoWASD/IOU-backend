@@ -4,7 +4,7 @@ import { MONTO_MAXIMO_CENTAVOS, parseMoney, parsePorcentaje } from '../domain/re
 const MENSAJE_MONTO = 'Ingresá un monto mayor a 0, con hasta 2 decimales';
 
 /** Money del contrato (`"12500.50"`) → centavos. */
-const montoPositivo = z.string({ error: MENSAJE_MONTO }).transform((s, ctx) => {
+export const montoPositivo = z.string({ error: MENSAJE_MONTO }).transform((s, ctx) => {
   const c = parseMoney(s);
   if (c === null || c <= 0 || c > MONTO_MAXIMO_CENTAVOS) {
     ctx.addIssue({ code: 'custom', message: MENSAJE_MONTO });
@@ -36,7 +36,7 @@ const porcentaje = z.string({ error: 'Ingresá un porcentaje' }).transform((s, c
   return p;
 });
 
-const fecha = z
+export const fecha = z
   .string({ error: 'Ingresá una fecha' })
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha tiene que tener el formato AAAA-MM-DD')
   .refine((f) => {

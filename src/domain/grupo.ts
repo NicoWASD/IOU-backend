@@ -49,7 +49,7 @@ export interface GrupoRepository {
   miembros(grupoId: string): Promise<Miembro[]>;
   actualizar(
     grupoId: string,
-    d: { nombre?: string; descripcion?: string | null },
+    d: { nombre?: string; descripcion?: string | null; archivado?: boolean },
   ): Promise<GrupoRow>;
   /** Alta como MIEMBRO activo. Tira AppError 409 YA_ES_MIEMBRO si la membresía ya existe. */
   agregarMiembro(grupoId: string, usuarioId: string): Promise<Miembro>;

@@ -102,6 +102,7 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       if (!g) throw new Error(`Grupo inexistente: ${grupoId}`);
       if (d.nombre !== undefined) g.nombre = d.nombre;
       if (d.descripcion !== undefined) g.descripcion = d.descripcion;
+      if (d.archivado !== undefined) g.archivado = d.archivado;
       return toRow(g);
     },
     async agregarMiembro(grupoId, usuarioId) {

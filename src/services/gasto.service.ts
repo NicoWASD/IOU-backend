@@ -13,7 +13,7 @@ import type { NuevoGastoBody } from '../schemas/gasto.schemas.js';
 import { grupoArchivado, type GrupoService } from './grupo.service.js';
 
 const gastoNoEncontrado = () => new AppError(404, 'GASTO_NO_ENCONTRADO', 'Este gasto no existe');
-const sinPermiso = () =>
+export const sinPermiso = () =>
   new AppError(403, 'SIN_PERMISO', 'Solo quien cargó el gasto o el admin pueden modificarlo');
 const regla = (code: string, message: string, details?: unknown) =>
   new AppError(422, code, message, details);
