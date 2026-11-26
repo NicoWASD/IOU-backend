@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:studio": "dotenv -e .env.local -- prisma studio",
-    "db:deploy": "dotenv -e .env.local -- prisma migrate deploy"
+    "db:deploy": "dotenv -e .env.local -- prisma migrate deploy",
+    "db:seed": "tsx scripts/seed-demo.ts"
   },
   "repository": {
     "type": "git",

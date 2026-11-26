@@ -393,7 +393,7 @@ describe('miembros', () => {
     expect(res.status).toBe(409);
     expect(res.body.error).toEqual({
       code: 'SALDO_PENDIENTE',
-      message: 'No se puede quitar: tiene saldo pendiente de $ 0,01',
+      message: 'No se puede quitar a Tomi: tiene saldo pendiente de $ 0,01',
       details: { saldo: '0.01' },
     });
   });

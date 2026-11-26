@@ -11,11 +11,11 @@ const miembroNoEncontrado = () =>
   new AppError(404, 'MIEMBRO_NO_ENCONTRADO', 'Esa persona no es miembro del grupo');
 const adminNoPuedeSalir = () =>
   new AppError(409, 'ADMIN_NO_PUEDE_SALIR', 'El admin no puede quitarse del grupo');
-const saldoPendiente = (saldo: number) =>
+const saldoPendiente = (nombre: string, saldo: number) =>
   new AppError(
     409,
     'SALDO_PENDIENTE',
-    `No se puede quitar: tiene saldo pendiente de ${formatARS(Math.abs(saldo))}`,
+    `No se puede quitar a ${nombre}: tiene saldo pendiente de ${formatARS(Math.abs(saldo))}`,
     { saldo: centsToMoney(saldo) },
   );
 
@@ -63,7 +63,11 @@ export function createMiembroService(deps: {
       if (!membresia?.activo) throw miembroNoEncontrado();
       if (usuarioId === actorId) throw adminNoPuedeSalir(); // RN-13
       const saldo = await saldos.saldoDe(grupoId, usuarioId);
-      if (saldo !== 0) throw saldoPendiente(saldo); // RN-12, CB-09
+      if (saldo !== 0) {
+        // M5: el mensaje nombra a la persona
+        const nombre = (await grupos.miembros(grupoId)).find((m) => m.id === usuarioId)?.nombre;
+        throw saldoPendiente(nombre ?? 'esta persona', saldo); // RN-12, CB-09
+      }
       await grupos.desactivarMiembro(grupoId, usuarioId);
     },
   };
