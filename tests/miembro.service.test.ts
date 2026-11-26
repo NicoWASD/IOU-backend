@@ -139,7 +139,7 @@ describe('quitar', () => {
     await expect(s.quitar(sofi, grupoId, tomi)).rejects.toMatchObject({
       status: 409,
       code: 'SALDO_PENDIENTE',
-      message: 'No se puede quitar: tiene saldo pendiente de $ 0,01',
+      message: 'No se puede quitar a Tomi: tiene saldo pendiente de $ 0,01',
       details: { saldo: '0.01' },
     });
     expect(pedidos).toEqual([[grupoId, tomi]]);
@@ -150,7 +150,7 @@ describe('quitar', () => {
     const s = conSaldos({ saldoDe: async () => -123456 });
     await expect(s.quitar(sofi, grupoId, tomi)).rejects.toMatchObject({
       code: 'SALDO_PENDIENTE',
-      message: 'No se puede quitar: tiene saldo pendiente de $ 1.234,56',
+      message: 'No se puede quitar a Tomi: tiene saldo pendiente de $ 1.234,56',
       details: { saldo: '-1234.56' },
     });
   });
