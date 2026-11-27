@@ -14,7 +14,7 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | H3 · Gastos | 19 | 18 | 0 | 1 | back 155/155 · front 141/141 |
 | H4 · Balances y pagos | 18 | 18 | 0 | 0 | back 167/167 · front 141/141 |
 | H5 · Calidad y entrega | 9 | 9 | 0 | 0 | back 167/167 · front 141/141 |
-| H6 · Usuarios, invitaciones, cobros y Ticky | 17 | 17 | 0 | 0 | back 160/160 · front 139/139 (local; falta el deploy) |
+| H6 · Usuarios, invitaciones, cobros y Ticky | 17 | 17 | 0 | 0 | back 160/160 · front 139/139 · desplegado (back #11, front #10) |
 | **Total** | **111** | **109** | **0** | **2** | CI en verde en los dos repos |
 
 ---
@@ -212,7 +212,7 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 
 ## H6 · Usuarios, invitaciones, cobros y Ticky (HU-31 a HU-38)
 
-Probado en local (front `:5173` + API `:3000` contra la rama `dev` de Neon), a 375 px y en desktop. **Falta el deploy a producción.**
+Probado en local (front `:5173` + API `:3000` contra la rama `dev` de Neon), a 375 px y en desktop. **Desplegado el 2026-11-26** (PRs #11 del back y #10 del front, CI en verde). En producción: la migración asignó `ana.demo` a Ana, `GET /me/medios` devuelve su Mercado Pago tras el seed, la búsqueda `br` devuelve a `bruno.demo`, `POST /grupos/:id/miembros` da 404 y el registro pide "Nombre de usuario".
 
 | ID | Pasos | Resultado esperado | Resultado obtenido | Estado | Fecha |
 |---|---|---|---|---|---|
