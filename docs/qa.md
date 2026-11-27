@@ -14,7 +14,8 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 | H3 · Gastos | 19 | 18 | 0 | 1 | back 155/155 · front 141/141 |
 | H4 · Balances y pagos | 18 | 18 | 0 | 0 | back 167/167 · front 141/141 |
 | H5 · Calidad y entrega | 9 | 9 | 0 | 0 | back 167/167 · front 141/141 |
-| **Total** | **94** | **92** | **0** | **2** | CI en verde en los dos repos |
+| H6 · Usuarios, invitaciones, cobros y Ticky | 17 | 17 | 0 | 0 | back 160/160 · front 139/139 (local; falta el deploy) |
+| **Total** | **111** | **109** | **0** | **2** | CI en verde en los dos repos |
 
 ---
 
@@ -208,3 +209,33 @@ Registro de las pruebas de cada hito: criterios de aceptación (CA) de [historia
 - **CA-18.2** (confirmación antes de eliminar un gasto): implementado, sin test automático.
 - Usuarios `qa-*@iou.test` en producción: no hay endpoint para borrarlos y el acceso a la base de producción no está disponible desde esta sesión.
 - CB-11 (dos personas editan el mismo gasto) y la transacción entre `saldoDe` y `desactivarMiembro`: documentados, fuera del alcance.
+
+## H6 · Usuarios, invitaciones, cobros y Ticky (HU-31 a HU-38)
+
+Probado en local (front `:5173` + API `:3000` contra la rama `dev` de Neon), a 375 px y en desktop. **Falta el deploy a producción.**
+
+| ID | Pasos | Resultado esperado | Resultado obtenido | Estado | Fecha |
+|---|---|---|---|---|---|
+| CA-31.1 | Registrarse con `@QA_H6_…`; repetir el usuario | Se guarda en minúsculas; repetido → 409 `USUARIO_EN_USO` | Navegador: queda `qa_h6_ilek3`; test `register guarda el usuario en minúsculas…` | ✅ | 2026-11-27 |
+| CA-31.2 | Migración `20261127010000_usuarios_invitaciones_cobros` en `dev` | Los usuarios existentes reciben un usuario desde su mail | 12 usuarios sin choques (`ana.demo`, `bruno.demo`…); `prisma migrate diff` vacío | ✅ | 2026-11-27 |
+| CA-32.1 | Escribir `a`, después `an` en Miembros | Desde 2 caracteres lista hasta 8, sin mails, sin mí ni los miembros | Con 1 letra no busca; con `an` aparece "Ana @ana.demo"; tests de búsqueda (sin `mail.com` en la respuesta) | ✅ | 2026-11-27 |
+| CA-32.2 | Elegir a Ana; invitarla otra vez; cancelar | Pendiente; repetida → 409 `YA_INVITADO`; el admin cancela | Queda en "Esperando respuesta" con ✕; tests de 409 y cancelación | ✅ | 2026-11-27 |
+| CA-33.1 | Entrar como Ana | Ve la invitación con Aceptar/Rechazar; aceptar la lleva al grupo | Tarjeta en Mis grupos y badge "1" en la barra; Aceptar → toast "¡Ya sos parte de Viaje QA H6!" y abre el grupo | ✅ | 2026-11-27 |
+| CA-33.2 | Aceptar la invitación de otro; aceptar dos veces | 404 | Tests: otro usuario → 404; segundo aceptar → 404 `INVITACION_NO_ENCONTRADA` | ✅ | 2026-11-27 |
+| CA-34.1 | PATCH `/auth/me` con nombre y apellido | El grupo muestra "Nombre Apellido"; sin ellos, el usuario | Test: "Tomás Paz" en el detalle; al borrarlos vuelve a "tomi" | ✅ | 2026-11-27 |
+| CA-35.1 | Configuración → Agregar medio → Guardar; 6 medios | Hasta 5; más → 422 | Test de front (PUT con el medio) y de back (`DEMASIADOS_MEDIOS`) | ✅ | 2026-11-27 |
+| CA-35.2 | Ana → Balances → Saldar (a Carla) | Muestra los medios de Carla con "Copiar" | "Cómo pagarle a Carla · Mercado Pago · carla.demo.mp"; en el panel sin permiso de portapapeles cae al aviso "Mantené apretado…" con el texto seleccionado | ✅ | 2026-11-27 |
+| CA-35.3 | Pedir los medios de alguien sin grupo en común | 404 | Test: 404 antes de compartir grupo y para un ajeno | ✅ | 2026-11-27 |
+| CA-36.1 | Configuración → Claro / Oscuro / Como el sistema | Cambia el tema y se recuerda en el dispositivo | Clase `.light`/`.dark` en `<html>` + `localStorage[iou.tema]`; se aplica antes del primer render | ✅ | 2026-11-27 |
+| CA-37.1 | Navegar a 375 px y en desktop | Barra inferior en mobile; "← Mis grupos" en el grupo | Barra fija con Grupos, Invitaciones (badge) y Configuración; en desktop van arriba; los toasts quedan por encima de la barra | ✅ | 2026-11-27 |
+| CA-37.2 | Tocar botones | Movimiento al apretar; nada con reduced-motion | `scale(.96)` al apretar, `-1px` al pasar, el ícono "+" gira; `motion-reduce` lo apaga | ✅ | 2026-11-27 |
+| CA-38.1 | Usuario nuevo en Mis grupos | Ticky guía 5 pasos tocando los botones reales | Navegador: Crear un grupo → nombre → Crear grupo → Miembros → buscador → Terminar; test del paso 1 → 2 | ✅ | 2026-11-27 |
+| CA-38.2 | "Saltar guía" | No vuelve a aparecer | PATCH `{ tutorialVisto: true }` (test); "Ver la guía de nuevo" en Configuración la reactiva | ✅ | 2026-11-27 |
+| CA-38.3 | Esperar en cualquier pantalla (o forzar con `tickyDice`) | Se asoma desde un borde libre con una pose y se va | Navegador: aparece abajo a la derecha sin tapar la fila de medios; poses leyendo, teléfono, sentado y saluda | ✅ | 2026-11-26 |
+| CA-38.4 | Tocar a Ticky; registrar un pago | Cosquillas con frase; halago con el nombre de quien cobra | Navegador: «¡Jaja, pará, pará!» al tocarlo; «¡Carla gastará eso pronto!» | ✅ | 2026-11-26 |
+
+### Observaciones del H6
+
+- Se eliminó `POST /grupos/:id/miembros` (alta directa por mail): el alta es solo por invitación. Por eso bajan los conteos de tests (back 167 → 160, front 141 → 139): se borraron los tests del alta por mail y se agregaron los de invitaciones, búsqueda, perfil y medios.
+- Ajuste tras la primera prueba del usuario: en Configuración, el select de plataforma se superponía al campo del alias (columna fija de 160 px); ahora las columnas usan `minmax(0, …)` y las etiquetas quedan alineadas.
+- En la rama `dev` quedaron el usuario `qa_h6_ilek3` y su grupo "Viaje QA H6" (con Ana demo como miembro).

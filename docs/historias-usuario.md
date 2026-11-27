@@ -251,7 +251,7 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 - **CA-29.1:** El README tiene la descripción, la arquitectura, las URLs del front y del back, las instrucciones para correrlo en local, el usuario demo y el aviso del "cold start" de Render.
 - **CA-29.2:** El repo es público y no tiene credenciales.
 
-## H6 · Usuarios, invitaciones, cobros y Ticket
+## H6 · Usuarios, invitaciones, cobros y Ticky
 
 ### HU-31 · Nombre de usuario — M
 *Como* persona que se registra, *quiero* elegir un @usuario, *para* que me encuentren sin mostrar mi mail.
@@ -287,10 +287,12 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 - **CA-37.1:** En móvil hay una barra inferior con Grupos, Invitaciones y Configuración; el grupo tiene «← Mis grupos».
 - **CA-37.2:** Los botones responden al toque con movimiento (sin movimiento si el sistema pide reducirlo).
 
-### HU-38 · Ticket y guía de primer uso — S
+### HU-38 · Ticky y guía de primer uso — S
 *Como* usuario nuevo, *quiero* que me guíen para crear mi primer grupo, *para* arrancar sin perderme.
-- **CA-38.1:** La primera vez, Ticket me guía en 5 pasos y yo toco los botones reales.
+- **CA-38.1:** La primera vez, Ticky se presenta desde el borde y me guía en 5 pasos y yo toco los botones reales.
 - **CA-38.2:** Puedo saltear la guía y no vuelve a aparecer.
+- **CA-38.3:** Ticky se asoma cada tanto desde un borde libre (sin tapar campos ni botones) con una pose (sentado, leyendo cuentas, hablando por teléfono, saludando) y se va solo.
+- **CA-38.4:** Si lo toco, reacciona como si le hiciera cosquillas; al registrar un pago me festeja con una frase («¡Carla gastará eso pronto!»).
 
 ---
 

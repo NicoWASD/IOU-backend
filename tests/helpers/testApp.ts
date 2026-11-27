@@ -12,6 +12,12 @@ import { createMemoryGastoRepository } from './memoryGastos.js';
 import { createMemoryBalanceRepository, createMemoryPagoRepository } from './memoryPagos.js';
 import { createMemoryGrupoRepository } from './memoryGrupos.js';
 import { createMemoryUsuarioRepository } from './memoryUsuarios.js';
+import {
+  createMemoryInvitacionRepository,
+  createMemoryMedioRepository,
+} from './memoryInvitaciones.js';
+import { createInvitacionService } from '../../src/services/invitacion.service.js';
+import { createMedioService } from '../../src/services/medio.service.js';
 
 export const TEST_SECRET = 'x'.repeat(32);
 
@@ -26,6 +32,7 @@ export function makeTestApp(
   const tokens = createTokenService({ secret: TEST_SECRET, expiresIn: '1h' });
   const usuarios = createMemoryUsuarioRepository();
   const grupos = createMemoryGrupoRepository(usuarios);
+  usuarios.setMiembroActivo(grupos.esMiembroActivo);
   const gastos = createMemoryGastoRepository(usuarios);
   const pagos = createMemoryPagoRepository(usuarios);
   const balances = createMemoryBalanceRepository(gastos, pagos);
@@ -36,9 +43,16 @@ export function makeTestApp(
     corsOrigins: ['http://localhost:5173'],
     authService: createAuthService({ usuarios, tokens }),
     grupoService,
-    miembroService: createMiembroService({ grupoService, grupos, usuarios, saldos }),
+    miembroService: createMiembroService({ grupoService, grupos, saldos }),
     gastoService: createGastoService({ grupoService, grupos, gastos, hoy }),
     balanceService: createBalanceService({ grupoService, grupos, balances, pagos, hoy }),
+    invitacionService: createInvitacionService({
+      grupoService,
+      grupos,
+      usuarios,
+      invitaciones: createMemoryInvitacionRepository(usuarios, grupos),
+    }),
+    medioService: createMedioService({ medios: createMemoryMedioRepository(), grupos }),
     tokens,
     rateLimit: false,
     ...appOverrides,
@@ -52,9 +66,32 @@ export async function registrar(
   nombre: string,
   email: string,
 ): Promise<{ token: string; id: string }> {
+  const usuario = email
+    .split('@')[0]!
+    .replace(/[^a-z0-9_.]/g, '')
+    .padEnd(3, '_');
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ nombre, email, password: 'secreta123' });
+    .send({ usuario, email, password: 'secreta123' });
   if (res.status !== 201) throw new Error(`No se pudo registrar a ${email}: ${res.status}`);
-  return { token: res.body.token as string, id: res.body.usuario.id as string };
+  const token = res.body.token as string;
+  // El nombre visible de los tests ("Tomi") sale del perfil (RN-19)
+  await request(app).patch('/api/auth/me').set('Authorization', `Bearer ${token}`).send({ nombre });
+  return { token, id: res.body.usuario.id as string };
+}
+
+type Sesion = { token: string; id: string };
+const h = (s: Sesion) => ({ Authorization: `Bearer ${s.token}` });
+
+/** Alta por invitación (RN-20): el admin invita y el invitado acepta. */
+export async function unir(app: Express, grupoId: string, admin: Sesion, invitado: Sesion) {
+  const inv = await request(app)
+    .post(`/api/grupos/${grupoId}/invitaciones`)
+    .set(h(admin))
+    .send({ usuarioId: invitado.id });
+  if (inv.status !== 201) throw new Error(`No se pudo invitar: ${inv.status} ${inv.text}`);
+  const ok = await request(app)
+    .post(`/api/invitaciones/${inv.body.invitacion.id}/aceptar`)
+    .set(h(invitado));
+  if (ok.status !== 200) throw new Error(`No se pudo aceptar: ${ok.status} ${ok.text}`);
 }

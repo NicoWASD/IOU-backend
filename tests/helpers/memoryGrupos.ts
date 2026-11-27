@@ -120,6 +120,11 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
     async desactivarMiembro(grupoId, usuarioId) {
       existente(grupoId, usuarioId).activo = false;
     },
+    async compartenGrupoActivo(a, b) {
+      return miembros.some(
+        (m) => m.usuarioId === a && m.activo && fila(m.grupoId, b)?.activo === true,
+      );
+    },
   };
 
   return {
@@ -130,6 +135,8 @@ export function createMemoryGrupoRepository(usuarios: { all(): UsuarioConHash[] 
       if (!g) throw new Error(`Grupo inexistente: ${grupoId}`);
       g.archivado = true;
     },
+    esMiembroActivo: (grupoId: string, usuarioId: string) =>
+      fila(grupoId, usuarioId)?.activo === true,
     /** Solo para tests: siembra una membresía con el rol y el estado que se pidan. */
     sembrarMiembro(grupoId: string, usuarioId: string, rol: Rol = 'MIEMBRO', activo = true) {
       insertarMiembro(grupoId, usuarioId, rol, activo);

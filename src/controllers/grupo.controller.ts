@@ -1,9 +1,5 @@
 import type { Request, RequestHandler, Response } from 'express';
-import type {
-  AgregarMiembroBody,
-  CrearGrupoBody,
-  EditarGrupoBody,
-} from '../schemas/grupo.schemas.js';
+import type { CrearGrupoBody, EditarGrupoBody } from '../schemas/grupo.schemas.js';
 import type { GrupoService } from '../services/grupo.service.js';
 import type { MiembroService } from '../services/miembro.service.js';
 
@@ -28,13 +24,9 @@ export function createGrupoController(grupos: GrupoService, miembros: MiembroSer
   const listarMiembros: RequestHandler = async (req, res) => {
     res.json({ miembros: await miembros.listar(actor(res), param(req, 'id')) });
   };
-  const agregarMiembro: RequestHandler = async (req, res) => {
-    const { email } = req.body as AgregarMiembroBody;
-    res.status(201).json({ miembro: await miembros.agregar(actor(res), param(req, 'id'), email) });
-  };
   const quitarMiembro: RequestHandler = async (req, res) => {
     await miembros.quitar(actor(res), param(req, 'id'), param(req, 'usuarioId'));
     res.status(204).end();
   };
-  return { listar, crear, detalle, editar, listarMiembros, agregarMiembro, quitarMiembro };
+  return { listar, crear, detalle, editar, listarMiembros, quitarMiembro };
 }

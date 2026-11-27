@@ -15,10 +15,11 @@ let juli: string;
 let grupoId: string;
 
 const nuevo = (nombre: string, email: string) =>
-  usuarios.create({ nombre, email, passwordHash: 'hash' }).then((u) => u.id);
+  usuarios
+    .create({ nombre, usuario: email.split('@')[0]!, email, passwordHash: 'hash' })
+    .then((u) => u.id);
 
-const conSaldos = (saldos: SaldoProvider) =>
-  createMiembroService({ grupoService, grupos, usuarios, saldos });
+const conSaldos = (saldos: SaldoProvider) => createMiembroService({ grupoService, grupos, saldos });
 
 beforeEach(async () => {
   usuarios = createMemoryUsuarioRepository();
@@ -31,87 +32,9 @@ beforeEach(async () => {
   grupoId = (await grupoService.crear(sofi, { nombre: 'Depto' })).id;
 });
 
-describe('agregar', () => {
-  it('por email registrado → queda activo como MIEMBRO, sin el hash (CA-10.1)', async () => {
-    const m = await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    expect(m).toEqual({
-      id: tomi,
-      nombre: 'Tomi',
-      email: 'tomi@mail.com',
-      rol: 'MIEMBRO',
-      activo: true,
-    });
-    expect(await grupos.membresia(grupoId, tomi)).toEqual({ rol: 'MIEMBRO', activo: true });
-  });
-
-  it('normaliza el email: "  Tomi@Mail.com " encuentra a tomi@mail.com (Review Focus 3)', async () => {
-    const m = await service.agregar(sofi, grupoId, '  Tomi@Mail.com ');
-    expect(m.id).toBe(tomi);
-  });
-
-  it('email inexistente → USUARIO_NO_ENCONTRADO (CA-10.2)', async () => {
-    await expect(service.agregar(sofi, grupoId, 'nadie@mail.com')).rejects.toMatchObject({
-      status: 404,
-      code: 'USUARIO_NO_ENCONTRADO',
-      message: 'No existe un usuario con ese email',
-    });
-  });
-
-  it('un miembro activo → YA_ES_MIEMBRO (CA-10.3)', async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    await expect(service.agregar(sofi, grupoId, 'tomi@mail.com')).rejects.toMatchObject({
-      status: 409,
-      code: 'YA_ES_MIEMBRO',
-      message: 'Ya es miembro del grupo',
-    });
-  });
-
-  it('agregarse a uno mismo → YA_ES_MIEMBRO (Review Focus 3)', async () => {
-    await expect(service.agregar(sofi, grupoId, 'sofi@mail.com')).rejects.toMatchObject({
-      status: 409,
-      code: 'YA_ES_MIEMBRO',
-    });
-  });
-
-  it('alguien que había sido quitado → se reactiva sin duplicarse (CA-10.4, CB-14)', async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    await service.quitar(sofi, grupoId, tomi);
-    const m = await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    expect(m).toMatchObject({ id: tomi, rol: 'MIEMBRO', activo: true });
-    const lista = await service.listar(sofi, grupoId);
-    expect(lista.filter((x) => x.id === tomi)).toHaveLength(1);
-    expect(lista.find((x) => x.id === tomi)?.activo).toBe(true);
-  });
-
-  it('por quien no es admin → SOLO_ADMIN', async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    await expect(service.agregar(tomi, grupoId, 'juli@mail.com')).rejects.toMatchObject({
-      status: 403,
-      code: 'SOLO_ADMIN',
-    });
-    expect(await grupos.membresia(grupoId, juli)).toBeNull();
-  });
-
-  it('sobre un grupo archivado → GRUPO_ARCHIVADO aunque lo pida el admin (Review Focus 4)', async () => {
-    grupos.archivar(grupoId);
-    await expect(service.agregar(sofi, grupoId, 'tomi@mail.com')).rejects.toMatchObject({
-      status: 409,
-      code: 'GRUPO_ARCHIVADO',
-    });
-    expect(await grupos.membresia(grupoId, tomi)).toBeNull();
-  });
-
-  it('por un no miembro → GRUPO_NO_ENCONTRADO', async () => {
-    await expect(service.agregar(juli, grupoId, 'tomi@mail.com')).rejects.toMatchObject({
-      status: 404,
-      code: 'GRUPO_NO_ENCONTRADO',
-    });
-  });
-});
-
 describe('quitar', () => {
   beforeEach(async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
+    grupos.sembrarMiembro(grupoId, tomi);
   });
 
   it('con saldo 0 → queda inactivo y sigue en listar con activo: false (CA-11.1)', async () => {
@@ -182,7 +105,7 @@ describe('quitar', () => {
   });
 
   it('por quien no es admin → SOLO_ADMIN', async () => {
-    await service.agregar(sofi, grupoId, 'juli@mail.com');
+    grupos.sembrarMiembro(grupoId, juli);
     await expect(service.quitar(tomi, grupoId, juli)).rejects.toMatchObject({
       status: 403,
       code: 'SOLO_ADMIN',
@@ -204,7 +127,7 @@ describe('quitar', () => {
 
 describe('precedencia de reglas', () => {
   beforeEach(async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
+    grupos.sembrarMiembro(grupoId, tomi);
   });
 
   it('el admin quitándose con saldo ≠ 0 → ADMIN_NO_PUEDE_SALIR, no SALDO_PENDIENTE', async () => {
@@ -214,11 +137,8 @@ describe('precedencia de reglas', () => {
     });
   });
 
-  it('un no-admin sobre un grupo archivado → SOLO_ADMIN (agregar y quitar)', async () => {
+  it('un no-admin sobre un grupo archivado → SOLO_ADMIN (quitar)', async () => {
     grupos.archivar(grupoId);
-    await expect(service.agregar(tomi, grupoId, 'juli@mail.com')).rejects.toMatchObject({
-      code: 'SOLO_ADMIN',
-    });
     await expect(service.quitar(tomi, grupoId, sofi)).rejects.toMatchObject({
       code: 'SOLO_ADMIN',
     });
@@ -229,18 +149,12 @@ describe('precedencia de reglas', () => {
       code: 'SOLO_ADMIN',
     });
   });
-
-  it('un no-admin agregando un email inexistente → SOLO_ADMIN (no revela qué emails existen)', async () => {
-    await expect(service.agregar(tomi, grupoId, 'nadie@mail.com')).rejects.toMatchObject({
-      code: 'SOLO_ADMIN',
-    });
-  });
 });
 
 describe('listar', () => {
   it('cualquier miembro activo ve a todos, activos e inactivos', async () => {
-    await service.agregar(sofi, grupoId, 'tomi@mail.com');
-    await service.agregar(sofi, grupoId, 'juli@mail.com');
+    grupos.sembrarMiembro(grupoId, tomi);
+    grupos.sembrarMiembro(grupoId, juli);
     await service.quitar(sofi, grupoId, juli);
     expect((await service.listar(tomi, grupoId)).map((m) => [m.nombre, m.activo])).toEqual([
       ['Sofía', true],

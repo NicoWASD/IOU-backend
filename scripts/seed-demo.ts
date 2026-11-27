@@ -11,9 +11,9 @@ const API = process.env.API_URL ?? 'http://localhost:3000/api';
 // Credenciales públicas a propósito: figuran en el README para la evaluación (CA-26.2)
 const PASSWORD = 'demo-iou-2026';
 const USUARIOS = [
-  { nombre: 'Ana', email: 'ana.demo@iou.test' },
-  { nombre: 'Bruno', email: 'bruno.demo@iou.test' },
-  { nombre: 'Carla', email: 'carla.demo@iou.test' },
+  { nombre: 'Ana', usuario: 'ana.demo', email: 'ana.demo@iou.test' },
+  { nombre: 'Bruno', usuario: 'bruno.demo', email: 'bruno.demo@iou.test' },
+  { nombre: 'Carla', usuario: 'carla.demo', email: 'carla.demo@iou.test' },
 ] as const;
 
 type Sesion = { token: string; id: string };
@@ -36,14 +36,16 @@ async function api<T>(method: string, path: string, token?: string, body?: unkno
   return json as T;
 }
 
-async function sesion(nombre: string, email: string): Promise<Sesion> {
+async function sesion(nombre: string, usuario: string, email: string): Promise<Sesion> {
   type Auth = { token: string; usuario: { id: string } };
   try {
     const r = await api<Auth>('POST', '/auth/register', undefined, {
-      nombre,
+      usuario,
       email,
       password: PASSWORD,
     });
+    // Nombre visible (RN-19) y sin la guía de primer uso, para la demo
+    await api('PATCH', '/auth/me', r.token, { nombre, tutorialVisto: true });
     return { token: r.token, id: r.usuario.id };
   } catch (err) {
     if ((err as { status?: number }).status !== 409) throw err;
@@ -57,7 +59,8 @@ const hace = (dias: number) =>
     new Date(Date.now() - dias * 86_400_000),
   );
 
-async function grupo(admin: Sesion, nombre: string, descripcion: string, miembros: string[]) {
+/** Alta por invitación (RN-20): el admin invita y el invitado acepta. */
+async function grupo(admin: Sesion, nombre: string, descripcion: string, miembros: Sesion[]) {
   const { grupos } = await api<{ grupos: { id: string; nombre: string }[] }>(
     'GET',
     '/grupos',
@@ -71,8 +74,15 @@ async function grupo(admin: Sesion, nombre: string, descripcion: string, miembro
     nombre,
     descripcion,
   });
-  for (const email of miembros)
-    await api('POST', `/grupos/${g.id}/miembros`, admin.token, { email });
+  for (const m of miembros) {
+    const { invitacion } = await api<{ invitacion: { id: string } }>(
+      'POST',
+      `/grupos/${g.id}/invitaciones`,
+      admin.token,
+      { usuarioId: m.id },
+    );
+    await api('POST', `/invitaciones/${invitacion.id}/aceptar`, m.token);
+  }
   return g.id;
 }
 
@@ -95,16 +105,15 @@ async function pagoParcial(gid: string, s: Map<string, Sesion>) {
 
 async function main() {
   console.log(`Sembrando en ${API}`);
-  const [ana, bruno, carla] = await Promise.all(USUARIOS.map((u) => sesion(u.nombre, u.email)));
+  const [ana, bruno, carla] = await Promise.all(
+    USUARIOS.map((u) => sesion(u.nombre, u.usuario, u.email)),
+  );
   if (!ana || !bruno || !carla) throw new Error('No se pudieron crear los usuarios');
   const porId = new Map([ana, bruno, carla].map((x) => [x.id, x]));
   const gasto = (gid: string, quien: Sesion, body: object) =>
     api('POST', `/grupos/${gid}/gastos`, quien.token, body);
 
-  const viaje = await grupo(ana, 'Viaje a Bariloche', 'Las vacaciones de invierno', [
-    USUARIOS[1].email,
-    USUARIOS[2].email,
-  ]);
+  const viaje = await grupo(ana, 'Viaje a Bariloche', 'Las vacaciones de invierno', [bruno, carla]);
   if (viaje) {
     const todos = [ana, bruno, carla].map((x) => ({ usuarioId: x.id }));
     await gasto(viaje, ana, {
@@ -150,7 +159,7 @@ async function main() {
     await pagoParcial(viaje, porId);
   }
 
-  const depto = await grupo(bruno, 'Depto compartido', 'Alquiler y servicios', [USUARIOS[0].email]);
+  const depto = await grupo(bruno, 'Depto compartido', 'Alquiler y servicios', [ana]);
   if (depto) {
     await gasto(depto, bruno, {
       descripcion: 'Alquiler',
@@ -173,6 +182,15 @@ async function main() {
     });
     await pagoParcial(depto, porId);
   }
+  // Medios de cobro de ejemplo para el Saldar (HU-35)
+  for (const [s, alias] of [
+    [ana, 'ana.demo.mp'],
+    [bruno, 'bruno.demo.mp'],
+    [carla, 'carla.demo.mp'],
+  ] as const)
+    await api('PUT', '/me/medios', s.token, {
+      medios: [{ plataforma: 'MERCADO_PAGO', valor: alias }],
+    });
   console.log(
     'Listo. Usuarios:',
     USUARIOS.map((u) => u.email).join(', '),

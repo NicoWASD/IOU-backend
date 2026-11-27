@@ -241,11 +241,12 @@ Solo para acciones destructivas o difíciles de revertir: eliminar un gasto, qui
 - **En la UI:** `<Logo />` en React, que hereda los tokens del tema. Al registrar el primer pago de un grupo se puede repetir el corte como guiño, sin exagerar el uso.
 - Hoja de marca completa: `IOU-client/docs/marca-iou.html`.
 
-## 13. H6: navegación, movimiento, Ticket y guía
+## 13. H6: navegación, movimiento, Ticky y guía
 
 - **Barra inferior (< 1024 px):** fija, 64 px + `env(safe-area-inset-bottom)`, fondo `surface` con borde superior `rule`. Tres ítems con icono y texto: Grupos, Invitaciones (badge con la cantidad), Configuración. El activo va en `birome`. En desktop los mismos links van en la barra superior.
 - **Volver:** el grupo tiene «← Mis grupos» (h-11) arriba del título.
 - **Movimiento:** al apretar, los botones hacen `scale(.97)` en 120 ms ease-out. Las pantallas entran con fade + 8 px hacia arriba en 180 ms. Con `prefers-reduced-motion` no hay desplazamiento.
-- **Ticket (mascota):** un recibo pixelado con dientes abajo, grilla de 8 px. Paleta `#7C3AED` cuerpo, `#4C1D95` boca, `#DDD6FE` renglones, `#1E1B4B` ojos. Poses: `quieto`, `parpadea` (cada 4 s), `camina` (ida y vuelta en estados vacíos) y `festeja` (salto cuando están todos al día). Es decorativo: `aria-hidden`.
-- **Guía de primer uso:** oscurece la pantalla menos el botón objetivo (recorte), con un globo y Ticket al lado. El usuario toca el botón real para avanzar. Siempre hay «Saltar guía». El globo es `aria-live="polite"`.
+- **Ticky (mascota):** un ticket pixelado con dientes abajo y bracitos, grilla de 8 px (`src/components/brand/Ticky.tsx`). Paleta `#7C3AED` cuerpo, `#6D28D9` brazos, `#4C1D95` boca, `#DDD6FE` renglones, `#1E1B4B` ojos. Poses: `quieto`, `parpadea`, `camina`, `festeja`, `saluda`, `sentado` (patitas al costado), `leyendo` (sostiene una cuenta), `telefono` y `cosquillas`. El SVG es `aria-hidden`; cuando se puede tocar va en un botón «Hacerle cosquillas a Ticky» y responde con una frase.
+- **Ticky con vida propia (`TickyPaseante`):** cada 45–110 s (la primera, a los 15–35 s) se asoma desde un borde al azar (izquierda, derecha o abajo), solo si ese lugar no tapa campos, botones, links ni diálogos y no estás escribiendo. Se queda 6–9 s, a veces con una frase, y se va por el mismo lado. Otras pantallas lo llaman con `tickyDice()` (por ejemplo, al registrar un pago: «¡{a} gastará eso pronto!»). Con reduced-motion aparece y se va con un fundido.
+- **Guía de primer uso:** Ticky entra desde el borde derecho, saluda y se presenta («¡Dale!» o «Saltar guía»). Después oscurece la pantalla menos el botón objetivo (recorte) y el globo camina hasta él, con Ticky parado del lado opuesto al botón. El usuario toca el botón real para avanzar. El globo es `aria-live="polite"`.
 - **Medios de cobro al saldar:** lista con plataforma, alias en mono y botón «Copiar» (toast «Copiado»).
