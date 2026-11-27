@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createTokenService } from '../src/lib/tokens.js';
 import { makeTestApp, TEST_SECRET } from './helpers/testApp.js';
 
-const sofi = { nombre: 'Sofía', email: 'sofi@mail.com', password: 'secreta123' };
+const sofi = { usuario: 'sofi.m', email: 'sofi@mail.com', password: 'secreta123' };
 
 describe('POST /api/auth/register', () => {
   it('201 con token, y /me devuelve al mismo usuario (CA-01.1)', async () => {
@@ -12,8 +12,12 @@ describe('POST /api/auth/register', () => {
     expect(reg.status).toBe(201);
     expect(reg.body.usuario).toEqual({
       id: expect.any(String),
-      nombre: 'Sofía',
+      nombre: 'sofi.m',
+      usuario: 'sofi.m',
       email: 'sofi@mail.com',
+      nombreReal: null,
+      apellido: null,
+      tutorialVisto: false,
     });
     const me = await request(app)
       .get('/api/auth/me')

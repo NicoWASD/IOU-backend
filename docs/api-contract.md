@@ -69,7 +69,6 @@ type Transferencia = { de: UsuarioRef; a: UsuarioRef; monto: Money };
 | `GET /grupos/:id` | — | `200 { grupo: GrupoDetalle }` | 404 `GRUPO_NO_ENCONTRADO` |
 | `PATCH /grupos/:id` | `{ nombre?, descripcion? }` | `200 { grupo: GrupoDetalle }` | 400 · 403 `SOLO_ADMIN` · 404 · 409 `GRUPO_ARCHIVADO` |
 | `GET /grupos/:id/miembros` | — | `200 { miembros: Miembro[] }` | 404 |
-| `POST /grupos/:id/miembros` | `{ email }` | `201 { miembro: Miembro }` (si estaba inactivo, se reactiva: CB-14) | 400 · 403 `SOLO_ADMIN` · 404 `USUARIO_NO_ENCONTRADO` ("No existe un usuario con ese email") · 409 `YA_ES_MIEMBRO` · 409 `GRUPO_ARCHIVADO` |
 | `DELETE /grupos/:id/miembros/:usuarioId` | — | `204` (baja lógica) | 403 `SOLO_ADMIN` · 404 `MIEMBRO_NO_ENCONTRADO` · 409 `SALDO_PENDIENTE` con `details: { saldo: Money }` (RN-12) · 409 `ADMIN_NO_PUEDE_SALIR` (RN-13) · 409 `GRUPO_ARCHIVADO` |
 
 Validación: `nombre` con trim, de 1 a 60 caracteres; `descripcion` con trim, hasta 200 (vacía equivale a `null`); `email` con las reglas del H1.
@@ -143,3 +142,29 @@ A partir del H4, `GrupoResumen.miBalance` devuelve el balance real, y `DELETE /m
   "message": "Las participaciones suman $ 12.400,50 y el gasto es de $ 12.500,50",
   "details": { "diferencia": "100.00" } } }
 ```
+
+## H6 · Usuarios, invitaciones y cobros
+
+```ts
+type UsuarioBuscado = UsuarioRef & { usuario: string };
+type Perfil = { id: string; usuario: string; email: string; nombre: string /* visible */; nombreReal: string | null; apellido: string | null; tutorialVisto: boolean };
+type Plataforma = 'MERCADO_PAGO' | 'UALA' | 'BRUBANK' | 'BANCO' | 'OTRO';
+type MedioCobro = { plataforma: Plataforma; valor: string; nota: string | null };
+type Invitacion = { id: string; grupo: { id: string; nombre: string }; invitado: UsuarioBuscado; invitadoPor: UsuarioRef; createdAt: string };
+```
+
+`/auth/register` pasa a recibir `{ usuario, email, password }` (sin `nombre`) y `/auth/*` devuelve `usuario: Perfil`. `UsuarioRef.nombre` es el nombre visible (RN-19). `POST /grupos/:id/miembros` se elimina: el alta es por invitación.
+
+| Ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `GET /usuarios/buscar?q=&grupoId=` | — | `200 { usuarios: UsuarioBuscado[] }` (máx. 8, por prefijo) | 400 (q < 2) · 429 |
+| `PATCH /auth/me` | `{ usuario?, nombre?, apellido?, tutorialVisto? }` | `200 { usuario: Perfil }` | 400 · 409 `USUARIO_EN_USO` |
+| `GET /me/medios` | — | `200 { medios: MedioCobro[] }` | |
+| `PUT /me/medios` | `{ medios: MedioCobro[] }` | `200 { medios }` | 400 · 422 `DEMASIADOS_MEDIOS` |
+| `GET /usuarios/:id/medios` | — | `200 { medios }` | 404 `USUARIO_NO_ENCONTRADO` (RN-22) |
+| `POST /grupos/:id/invitaciones` | `{ usuarioId }` | `201 { invitacion }` | 403 `SOLO_ADMIN` · 404 `USUARIO_NO_ENCONTRADO` · 409 `YA_ES_MIEMBRO` · 409 `YA_INVITADO` · 409 `GRUPO_ARCHIVADO` |
+| `GET /grupos/:id/invitaciones` | — | `200 { invitaciones }` (pendientes) | 403 `SOLO_ADMIN` · 404 |
+| `DELETE /grupos/:id/invitaciones/:invId` | — | `204` | 403 · 404 `INVITACION_NO_ENCONTRADA` |
+| `GET /invitaciones` | — | `200 { invitaciones }` (mías, pendientes) | |
+| `POST /invitaciones/:id/aceptar` | — | `200 { grupoId }` | 404 `INVITACION_NO_ENCONTRADA` · 409 `GRUPO_ARCHIVADO` |
+| `POST /invitaciones/:id/rechazar` | — | `204` | 404 `INVITACION_NO_ENCONTRADA` |

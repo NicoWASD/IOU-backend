@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { makeTestApp, registrar } from './helpers/testApp.js';
+import { makeTestApp, registrar, unir } from './helpers/testApp.js';
 
 type U = { token: string; id: string };
 let ctx: ReturnType<typeof makeTestApp>;
@@ -30,8 +30,7 @@ beforeEach(async () => {
   ajeno = await registrar(ctx.app, 'Ajeno', 'ajeno@mail.com');
   const g = await request(ctx.app).post('/api/grupos').set(auth(sofi)).send({ nombre: 'Casa' });
   grupoId = g.body.grupo.id;
-  for (const email of ['tomi@mail.com', 'juli@mail.com'])
-    await request(ctx.app).post(`/api/grupos/${grupoId}/miembros`).set(auth(sofi)).send({ email });
+  for (const u of [tomi, juli]) await unir(ctx.app, grupoId, sofi, u);
 });
 
 describe('POST /gastos', () => {

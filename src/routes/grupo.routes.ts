@@ -5,13 +5,13 @@ import { createGrupoController } from '../controllers/grupo.controller.js';
 import type { TokenService } from '../lib/tokens.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 import { validate } from '../middlewares/validate.js';
-import {
-  agregarMiembroSchema,
-  crearGrupoSchema,
-  editarGrupoSchema,
-} from '../schemas/grupo.schemas.js';
+import { crearGrupoSchema, editarGrupoSchema } from '../schemas/grupo.schemas.js';
 import { nuevoGastoSchema } from '../schemas/gasto.schemas.js';
 import { nuevoPagoSchema } from '../schemas/pago.schemas.js';
+import { invitarSchema } from '../schemas/usuario.schemas.js';
+import { createUsuarioController } from '../controllers/usuario.controller.js';
+import type { InvitacionService } from '../services/invitacion.service.js';
+import type { MedioService } from '../services/medio.service.js';
 import type { BalanceService } from '../services/balance.service.js';
 import type { GastoService } from '../services/gasto.service.js';
 import type { GrupoService } from '../services/grupo.service.js';
@@ -23,8 +23,10 @@ export function grupoRouter(deps: {
   miembroService: MiembroService;
   gastoService: GastoService;
   balanceService: BalanceService;
+  invitacionService: InvitacionService;
+  medioService: MedioService;
   tokens: TokenService;
-  /** Límite de altas de miembros (evita enumerar emails). */
+  /** Límite de invitaciones. */
   limiterMiembros: RequestHandler;
 }): Router {
   const router = Router();
@@ -35,13 +37,11 @@ export function grupoRouter(deps: {
   router.get('/:id', c.detalle);
   router.patch('/:id', validate(editarGrupoSchema), c.editar);
   router.get('/:id/miembros', c.listarMiembros);
-  router.post(
-    '/:id/miembros',
-    deps.limiterMiembros,
-    validate(agregarMiembroSchema),
-    c.agregarMiembro,
-  );
   router.delete('/:id/miembros/:usuarioId', c.quitarMiembro);
+  const u = createUsuarioController(deps.invitacionService, deps.medioService);
+  router.get('/:id/invitaciones', u.pendientesDeGrupo);
+  router.post('/:id/invitaciones', deps.limiterMiembros, validate(invitarSchema), u.invitar);
+  router.delete('/:id/invitaciones/:invId', u.cancelar);
   const g = createGastoController(deps.gastoService);
   router.get('/:id/gastos', g.listar);
   router.post('/:id/gastos', validate(nuevoGastoSchema), g.crear);

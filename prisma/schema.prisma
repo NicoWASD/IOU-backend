@@ -10,19 +10,27 @@ datasource db {
 }
 
 model Usuario {
-  id              String               @id @default(uuid()) @db.Uuid
-  nombre          String               @db.VarChar(80)
-  email           String               @unique @db.VarChar(120)
-  passwordHash    String               @map("password_hash")
-  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz
-  gruposCreados   Grupo[]              @relation("GruposCreados")
-  membresias      MiembroGrupo[]
-  gastosPagados   Gasto[]              @relation("GastosPagados")
-  gastosCreados   Gasto[]              @relation("GastosCreados")
-  participaciones ParticipacionGasto[]
-  pagosEnviados   Pago[]               @relation("PagosEnviados")
-  pagosRecibidos  Pago[]               @relation("PagosRecibidos")
-  pagosCreados    Pago[]               @relation("PagosCreados")
+  id                 String               @id @default(uuid()) @db.Uuid
+  /// Nombre visible (RN-19): «nombreReal apellido» o el usuario. Lo recalcula el service.
+  nombre             String               @db.VarChar(80)
+  usuario            String               @unique @db.VarChar(20)
+  nombreReal         String?              @map("nombre_real") @db.VarChar(40)
+  apellido           String?              @db.VarChar(40)
+  tutorialVisto      Boolean              @default(false) @map("tutorial_visto")
+  email              String               @unique @db.VarChar(120)
+  passwordHash       String               @map("password_hash")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  gruposCreados      Grupo[]              @relation("GruposCreados")
+  membresias         MiembroGrupo[]
+  gastosPagados      Gasto[]              @relation("GastosPagados")
+  gastosCreados      Gasto[]              @relation("GastosCreados")
+  participaciones    ParticipacionGasto[]
+  pagosEnviados      Pago[]               @relation("PagosEnviados")
+  pagosRecibidos     Pago[]               @relation("PagosRecibidos")
+  pagosCreados       Pago[]               @relation("PagosCreados")
+  invitaciones       Invitacion[]         @relation("Invitado")
+  invitacionesHechas Invitacion[]         @relation("Invitador")
+  medios             MedioCobro[]
 
   @@map("usuarios")
 }
@@ -33,17 +41,18 @@ enum Rol {
 }
 
 model Grupo {
-  id          String         @id @default(uuid()) @db.Uuid
-  nombre      String         @db.VarChar(60)
-  descripcion String?        @db.VarChar(200)
-  moneda      String         @default("ARS") @db.Char(3)
-  archivado   Boolean        @default(false)
-  creadoPorId String         @map("creado_por") @db.Uuid
-  creadoPor   Usuario        @relation("GruposCreados", fields: [creadoPorId], references: [id])
-  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  miembros    MiembroGrupo[]
-  gastos      Gasto[]
-  pagos       Pago[]
+  id           String         @id @default(uuid()) @db.Uuid
+  nombre       String         @db.VarChar(60)
+  descripcion  String?        @db.VarChar(200)
+  moneda       String         @default("ARS") @db.Char(3)
+  archivado    Boolean        @default(false)
+  creadoPorId  String         @map("creado_por") @db.Uuid
+  creadoPor    Usuario        @relation("GruposCreados", fields: [creadoPorId], references: [id])
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  miembros     MiembroGrupo[]
+  gastos       Gasto[]
+  pagos        Pago[]
+  invitaciones Invitacion[]
 
   @@map("grupos")
 }
@@ -117,4 +126,50 @@ model Pago {
 
   @@index([grupoId, fecha(sort: Desc)])
   @@map("pagos")
+}
+
+enum EstadoInvitacion {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+  CANCELADA
+}
+
+/// Invitación a un grupo (RN-20). Una sola PENDIENTE por (grupo, invitado): índice parcial en la migración.
+model Invitacion {
+  id          String           @id @default(uuid()) @db.Uuid
+  grupoId     String           @map("grupo_id") @db.Uuid
+  invitadoId  String           @map("invitado_id") @db.Uuid
+  invitadorId String           @map("invitador_id") @db.Uuid
+  estado      EstadoInvitacion @default(PENDIENTE)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  grupo       Grupo            @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  invitado    Usuario          @relation("Invitado", fields: [invitadoId], references: [id])
+  invitador   Usuario          @relation("Invitador", fields: [invitadorId], references: [id])
+
+  @@index([invitadoId, estado])
+  @@index([grupoId, estado])
+  @@map("invitaciones")
+}
+
+enum Plataforma {
+  MERCADO_PAGO
+  UALA
+  BRUBANK
+  BANCO
+  OTRO
+}
+
+/// Medio de cobro (RN-21: hasta 5 por usuario).
+model MedioCobro {
+  id         String     @id @default(uuid()) @db.Uuid
+  usuarioId  String     @map("usuario_id") @db.Uuid
+  plataforma Plataforma
+  valor      String     @db.VarChar(60)
+  nota       String?    @db.VarChar(60)
+  orden      Int
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, orden])
+  @@map("medios_cobro")
 }

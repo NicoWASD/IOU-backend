@@ -251,11 +251,54 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 - **CA-29.1:** El README tiene la descripción, la arquitectura, las URLs del front y del back, las instrucciones para correrlo en local, el usuario demo y el aviso del "cold start" de Render.
 - **CA-29.2:** El repo es público y no tiene credenciales.
 
+## H6 · Usuarios, invitaciones, cobros y Ticky
+
+### HU-31 · Nombre de usuario — M
+*Como* persona que se registra, *quiero* elegir un @usuario, *para* que me encuentren sin mostrar mi mail.
+- **CA-31.1:** El registro pide usuario, email y contraseña; el usuario se guarda en minúsculas y uno repetido da 409 `USUARIO_EN_USO`.
+- **CA-31.2:** Los usuarios existentes reciben un usuario generado desde su mail.
+
+### HU-32 · Buscar e invitar — M
+*Como* admin, *quiero* buscar por @usuario mientras escribo e invitar, *para* sumar gente sin saber su mail.
+- **CA-32.1:** Desde 2 caracteres lista hasta 8 usuarios (sin mail), sin incluirme ni a los miembros activos.
+- **CA-32.2:** Invitar crea una invitación pendiente; repetirla da 409 `YA_INVITADO`. El admin puede cancelarla.
+
+### HU-33 · Responder invitaciones — M
+*Como* invitado, *quiero* aceptar o rechazar, *para* decidir a qué grupos entro.
+- **CA-33.1:** En Mis grupos veo las invitaciones pendientes con Aceptar y Rechazar; aceptar me lleva al grupo.
+- **CA-33.2:** Nadie más puede responder mi invitación (404).
+
+### HU-34 · Perfil — M
+*Como* usuario, *quiero* editar mi usuario, nombre y apellido, *para* que me reconozcan.
+- **CA-34.1:** Si cargo nombre y apellido, se muestran en lugar del @usuario.
+
+### HU-35 · Medios de cobro al saldar — M
+*Como* acreedor, *quiero* cargar mis alias, *para* que me paguen fácil; *como* deudor, *quiero* copiarlos al saldar.
+- **CA-35.1:** Cargo hasta 5 medios (plataforma, alias/CVU, nota).
+- **CA-35.2:** Al saldar veo los medios de quien cobra y cada uno se copia con un toque.
+- **CA-35.3:** Solo los ve quien comparte un grupo activo conmigo (RN-22).
+
+### HU-36 · Configuración y tema — S
+*Como* usuario, *quiero* elegir tema claro, oscuro o del sistema, *para* usar la app cómoda.
+- **CA-36.1:** La elección se recuerda en este dispositivo.
+
+### HU-37 · Navegación móvil y movimiento — M
+*Como* usuario de celular, *quiero* moverme con el pulgar y poder volver, *para* no depender del logo.
+- **CA-37.1:** En móvil hay una barra inferior con Grupos, Invitaciones y Configuración; el grupo tiene «← Mis grupos».
+- **CA-37.2:** Los botones responden al toque con movimiento (sin movimiento si el sistema pide reducirlo).
+
+### HU-38 · Ticky y guía de primer uso — S
+*Como* usuario nuevo, *quiero* que me guíen para crear mi primer grupo, *para* arrancar sin perderme.
+- **CA-38.1:** La primera vez, Ticky se presenta desde el borde y me guía en 5 pasos y yo toco los botones reales.
+- **CA-38.2:** Puedo saltear la guía y no vuelve a aparecer.
+- **CA-38.3:** Ticky se asoma cada tanto desde un borde libre (sin tapar campos ni botones) con una pose (sentado, leyendo cuentas, hablando por teléfono, saludando) y se va solo.
+- **CA-38.4:** Si lo toco, reacciona como si le hiciera cosquillas; al registrar un pago me festeja con una frase («¡Carla gastará eso pronto!»).
+
 ---
 
 ## Fuera del alcance (backlog futuro)
 
-- Invitar por email a personas no registradas.
+- Invitar por email a personas no registradas (las invitaciones del H6 son entre usuarios registrados).
 - Varias monedas por grupo.
 - Categorías de gastos y gráficos.
 - Adjuntar fotos de tickets.
@@ -272,4 +315,5 @@ Cada hito cierra con una **validación tuya**: revisás la app desplegada contra
 | H3 | 7 | 6 | 1 |
 | H4 | 7 | 4 | 3 |
 | H5 | 4 | 4 | 0 |
-| **Total** | **31** | **26** | **5** |
+| H6 | 8 | 6 | 2 |
+| **Total** | **39** | **32** | **7** |

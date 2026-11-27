@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { makeTestApp, registrar } from './helpers/testApp.js';
+import { makeTestApp, registrar, unir } from './helpers/testApp.js';
 
 let ctx: ReturnType<typeof makeTestApp>;
 let sofi: { token: string; id: string };
@@ -191,11 +191,7 @@ describe('PATCH /api/grupos/:id', () => {
 
   it('403 SOLO_ADMIN para un miembro común (CA-09.2)', async () => {
     const g = await crearGrupo();
-    await request(ctx.app)
-      .post(`/api/grupos/${g.id}/miembros`)
-      .set(auth(sofi))
-      .send({ email: 'tomi@mail.com' })
-      .expect(201);
+    await unir(ctx.app, g.id, sofi, tomi);
     const res = await request(ctx.app)
       .patch(`/api/grupos/${g.id}`)
       .set(auth(tomi))
@@ -222,48 +218,16 @@ describe('miembros', () => {
     grupoId = (await crearGrupo()).id;
   });
 
-  const agregar = (email: string, quien = sofi) =>
-    request(ctx.app).post(`/api/grupos/${grupoId}/miembros`).set(auth(quien)).send({ email });
-
-  it('POST 201 con el miembro; el email se normaliza (CA-10.1, Review Focus 3)', async () => {
-    const res = await agregar('  Tomi@Mail.com ');
-    expect(res.status).toBe(201);
-    expect(res.body).toEqual({
-      miembro: {
-        id: tomi.id,
-        nombre: 'Tomi',
-        email: 'tomi@mail.com',
-        rol: 'MIEMBRO',
-        activo: true,
-      },
-    });
-  });
-
-  it('POST 400 con un email mal formado', async () => {
-    const res = await agregar('no-es-mail');
-    expect(res.status).toBe(400);
-    expect(res.body.error.details.email).toBeDefined();
-  });
-
-  it('POST 400 sin email, con un mensaje que habla de la otra persona', async () => {
-    const res = await request(ctx.app)
-      .post(`/api/grupos/${grupoId}/miembros`)
-      .set(auth(sofi))
-      .send({});
-    expect(res.status).toBe(400);
-    expect(res.body.error.details.email).toBe('Ingresá el email de la persona');
-  });
-
   it('un miembro dado de baja recibe 404 también en las rutas de miembros', async () => {
-    await agregar('tomi@mail.com').expect(201);
-    await agregar('ajeno@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
+    await unir(ctx.app, grupoId, sofi, ajeno);
     await request(ctx.app)
       .delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`)
       .set(auth(sofi))
       .expect(204);
     const intentos = [
       request(ctx.app).get(`/api/grupos/${grupoId}/miembros`),
-      request(ctx.app).post(`/api/grupos/${grupoId}/miembros`).send({ email: 'sofi@mail.com' }),
+      request(ctx.app).post(`/api/grupos/${grupoId}/invitaciones`).send({ usuarioId: sofi.id }),
       request(ctx.app).delete(`/api/grupos/${grupoId}/miembros/${ajeno.id}`),
     ];
     for (const intento of intentos) {
@@ -274,7 +238,7 @@ describe('miembros', () => {
   });
 
   it('DELETE de alguien que ya está inactivo → 404 MIEMBRO_NO_ENCONTRADO', async () => {
-    await agregar('tomi@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
     const quitar = () =>
       request(ctx.app).delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`).set(auth(sofi));
     await quitar().expect(204);
@@ -283,40 +247,8 @@ describe('miembros', () => {
     expect(res.body.error.code).toBe('MIEMBRO_NO_ENCONTRADO');
   });
 
-  it('POST 404 USUARIO_NO_ENCONTRADO (CA-10.2)', async () => {
-    const res = await agregar('nadie@mail.com');
-    expect(res.status).toBe(404);
-    expect(res.body.error).toEqual({
-      code: 'USUARIO_NO_ENCONTRADO',
-      message: 'No existe un usuario con ese email',
-    });
-  });
-
-  it('POST 409 YA_ES_MIEMBRO, también para uno mismo (CA-10.3)', async () => {
-    await agregar('tomi@mail.com').expect(201);
-    for (const email of ['tomi@mail.com', 'sofi@mail.com']) {
-      const res = await agregar(email);
-      expect(res.status).toBe(409);
-      expect(res.body.error.code).toBe('YA_ES_MIEMBRO');
-    }
-  });
-
-  it('POST 403 SOLO_ADMIN para un miembro común', async () => {
-    await agregar('tomi@mail.com').expect(201);
-    const res = await agregar('ajeno@mail.com', tomi);
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('SOLO_ADMIN');
-  });
-
-  it('POST 409 GRUPO_ARCHIVADO', async () => {
-    ctx.grupos.archivar(grupoId);
-    const res = await agregar('tomi@mail.com');
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe('GRUPO_ARCHIVADO');
-  });
-
   it('DELETE 204 sin body; queda inactivo en GET y vuelve al reagregarlo (CA-11.1, CB-14)', async () => {
-    await agregar('tomi@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
     const del = await request(ctx.app)
       .delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`)
       .set(auth(sofi));
@@ -337,9 +269,7 @@ describe('miembros', () => {
     await request(ctx.app).get(`/api/grupos/${grupoId}`).set(auth(tomi)).expect(404);
     expect((await request(ctx.app).get('/api/grupos').set(auth(tomi))).body.grupos).toEqual([]);
 
-    const otraVez = await agregar('tomi@mail.com');
-    expect(otraVez.status).toBe(201);
-    expect(otraVez.body.miembro.activo).toBe(true);
+    await unir(ctx.app, grupoId, sofi, tomi); // CB-15: se reactiva al aceptar
     const despues = await request(ctx.app).get(`/api/grupos/${grupoId}/miembros`).set(auth(sofi));
     expect(despues.body.miembros).toHaveLength(2);
   });
@@ -363,7 +293,7 @@ describe('miembros', () => {
   });
 
   it('DELETE 403 SOLO_ADMIN para un miembro común', async () => {
-    await agregar('tomi@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
     const res = await request(ctx.app)
       .delete(`/api/grupos/${grupoId}/miembros/${sofi.id}`)
       .set(auth(tomi));
@@ -372,7 +302,7 @@ describe('miembros', () => {
   });
 
   it('DELETE 409 GRUPO_ARCHIVADO', async () => {
-    await agregar('tomi@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
     ctx.grupos.archivar(grupoId);
     const res = await request(ctx.app)
       .delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`)
@@ -386,7 +316,7 @@ describe('miembros', () => {
     sofi = await registrar(ctx.app, 'Sofía', 'sofi@mail.com');
     tomi = await registrar(ctx.app, 'Tomi', 'tomi@mail.com');
     grupoId = (await crearGrupo()).id;
-    await agregar('tomi@mail.com').expect(201);
+    await unir(ctx.app, grupoId, sofi, tomi);
     const res = await request(ctx.app)
       .delete(`/api/grupos/${grupoId}/miembros/${tomi.id}`)
       .set(auth(sofi));
@@ -406,7 +336,7 @@ describe('un usuario ajeno nunca se entera de que el grupo existe (Review Focus 
       request(ctx.app).get(`/api/grupos/${id}`),
       request(ctx.app).patch(`/api/grupos/${id}`).send({ nombre: 'X' }),
       request(ctx.app).get(`/api/grupos/${id}/miembros`),
-      request(ctx.app).post(`/api/grupos/${id}/miembros`).send({ email: 'ajeno@mail.com' }),
+      request(ctx.app).post(`/api/grupos/${id}/invitaciones`).send({ usuarioId: ajeno.id }),
       request(ctx.app).delete(`/api/grupos/${id}/miembros/${sofi.id}`),
     ];
     for (const intento of intentos) {
@@ -426,7 +356,7 @@ describe('autenticación', () => {
       request(ctx.app).get(`/api/grupos/${id}`),
       request(ctx.app).patch(`/api/grupos/${id}`).send({ nombre: 'X' }),
       request(ctx.app).get(`/api/grupos/${id}/miembros`),
-      request(ctx.app).post(`/api/grupos/${id}/miembros`).send({ email: 'a@b.com' }),
+      request(ctx.app).post(`/api/grupos/${id}/invitaciones`).send({ usuarioId: id }),
       request(ctx.app).delete(`/api/grupos/${id}/miembros/${id}`),
     ];
     for (const intento of intentos) {
@@ -443,9 +373,9 @@ describe('autenticación', () => {
       .send({ nombre: 'Depto' });
     const id = creado.body.grupo.id as string;
     const agregado = await request(ctx.app)
-      .post(`/api/grupos/${id}/miembros`)
+      .post(`/api/grupos/${id}/invitaciones`)
       .set(auth(sofi))
-      .send({ email: 'tomi@mail.com' });
+      .send({ usuarioId: tomi.id });
     const editado = await request(ctx.app)
       .patch(`/api/grupos/${id}`)
       .set(auth(sofi))
@@ -468,17 +398,17 @@ describe('autenticación', () => {
   });
 });
 
-describe('límite de intentos al agregar miembros', () => {
-  it('el intento 31 en la ventana → 429 DEMASIADOS_INTENTOS (evita enumerar emails)', async () => {
+describe('límite de intentos al invitar', () => {
+  it('el intento 31 en la ventana → 429 DEMASIADOS_INTENTOS (evita recorrer usuarios)', async () => {
     const app = makeTestApp({ rateLimit: true }).app;
     // el registro también tiene límite (10): se registra una sola cuenta
     const admin = await registrar(app, 'Admin', 'admin-rl@mail.com');
     const g = await request(app).post('/api/grupos').set(auth(admin)).send({ nombre: 'Límite' });
     const intento = (i: number) =>
       request(app)
-        .post(`/api/grupos/${g.body.grupo.id}/miembros`)
+        .post(`/api/grupos/${g.body.grupo.id}/invitaciones`)
         .set(auth(admin))
-        .send({ email: `nadie-${i}@mail.com` });
+        .send({ usuarioId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}` });
     for (let i = 0; i < 30; i++) expect((await intento(i)).status).toBe(404);
     const res = await intento(30);
     expect(res.status).toBe(429);

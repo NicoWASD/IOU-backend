@@ -3,10 +3,17 @@ import express, { type RequestHandler } from 'express';
 import type { TokenService } from './lib/tokens.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFound } from './middlewares/notFound.js';
-import { createAuthRateLimit, createMiembrosRateLimit } from './middlewares/rateLimit.js';
+import {
+  createAuthRateLimit,
+  createBusquedaRateLimit,
+  createMiembrosRateLimit,
+} from './middlewares/rateLimit.js';
 import { authRouter } from './routes/auth.routes.js';
 import { grupoRouter } from './routes/grupo.routes.js';
 import { healthRouter } from './routes/health.routes.js';
+import { usuarioRouter } from './routes/usuario.routes.js';
+import type { InvitacionService } from './services/invitacion.service.js';
+import type { MedioService } from './services/medio.service.js';
 import type { AuthService } from './services/auth.service.js';
 import type { BalanceService } from './services/balance.service.js';
 import type { GastoService } from './services/gasto.service.js';
@@ -21,6 +28,8 @@ export type AppDeps = {
   miembroService: MiembroService;
   gastoService: GastoService;
   balanceService: BalanceService;
+  invitacionService: InvitacionService;
+  medioService: MedioService;
   tokens: TokenService;
   /** Límites de intentos (/auth y altas de miembros). Activos por defecto; los tests los apagan. */
   rateLimit?: boolean;
@@ -55,8 +64,19 @@ export function createApp(deps: AppDeps): express.Express {
       miembroService: deps.miembroService,
       gastoService: deps.gastoService,
       balanceService: deps.balanceService,
+      invitacionService: deps.invitacionService,
+      medioService: deps.medioService,
       tokens: deps.tokens,
       limiterMiembros: deps.rateLimit === false ? passThrough : createMiembrosRateLimit(),
+    }),
+  );
+  app.use(
+    '/api',
+    usuarioRouter({
+      invitacionService: deps.invitacionService,
+      medioService: deps.medioService,
+      tokens: deps.tokens,
+      limiterBusqueda: deps.rateLimit === false ? passThrough : createBusquedaRateLimit(),
     }),
   );
   app.use(notFound);

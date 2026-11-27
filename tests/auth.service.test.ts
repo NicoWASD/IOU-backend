@@ -12,15 +12,19 @@ beforeEach(() => {
   auth = createAuthService({ usuarios, tokens });
 });
 
-const sofi = { nombre: 'Sofía', email: 'sofi@mail.com', password: 'secreta123' };
+const sofi = { usuario: 'sofi.m', email: 'sofi@mail.com', password: 'secreta123' };
 
 describe('register', () => {
   it('crea el usuario y devuelve un token suyo, sin el hash (CA-01.1, CA-01.4)', async () => {
     const res = await auth.register(sofi);
     expect(res.usuario).toEqual({
       id: expect.any(String),
-      nombre: 'Sofía',
+      nombre: 'sofi.m',
+      usuario: 'sofi.m',
       email: 'sofi@mail.com',
+      nombreReal: null,
+      apellido: null,
+      tutorialVisto: false,
     });
     expect(res.usuario).not.toHaveProperty('passwordHash');
     expect(tokens.verify(res.token).sub).toBe(res.usuario.id);

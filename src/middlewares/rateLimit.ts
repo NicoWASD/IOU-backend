@@ -23,5 +23,8 @@ export function createRateLimit(limit: number) {
 /** 10 intentos cada 15 minutos por IP en login y registro. */
 export const createAuthRateLimit = () => createRateLimit(10);
 
-/** 30 altas de miembros cada 15 minutos por IP: evita usar el alta para enumerar emails. */
+/** 30 invitaciones cada 15 minutos por IP. */
 export const createMiembrosRateLimit = () => createRateLimit(30);
+
+/** 300 búsquedas cada 15 minutos por IP (el buscador consulta mientras se escribe). */
+export const createBusquedaRateLimit = () => createRateLimit(300);

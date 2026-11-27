@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { liquidar } from '../src/domain/balances.js';
-import { makeTestApp, registrar } from './helpers/testApp.js';
+import { makeTestApp, registrar, unir } from './helpers/testApp.js';
 
 type U = { token: string; id: string };
 let ctx: ReturnType<typeof makeTestApp>;
@@ -26,7 +26,7 @@ beforeEach(async () => {
   c = await registrar(ctx.app, 'C', 'c@mail.com');
   gid = (await request(ctx.app).post('/api/grupos').set(auth(a)).send({ nombre: 'G' })).body.grupo
     .id;
-  for (const email of ['b@mail.com', 'c@mail.com']) await post('/miembros', { email });
+  for (const u of [b, c]) await unir(ctx.app, gid, a, u);
   // CA-12.1: $300 entre A, B y C, pagado por A
   await post('/gastos', {
     descripcion: 'Super',

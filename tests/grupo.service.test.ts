@@ -12,7 +12,9 @@ let tomi: string;
 let juli: string;
 
 const nuevo = (nombre: string, email: string) =>
-  usuarios.create({ nombre, email, passwordHash: 'hash' }).then((u) => u.id);
+  usuarios
+    .create({ nombre, usuario: email.split('@')[0]!, email, passwordHash: 'hash' })
+    .then((u) => u.id);
 
 beforeEach(async () => {
   usuarios = createMemoryUsuarioRepository();

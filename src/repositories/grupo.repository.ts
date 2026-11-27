@@ -139,5 +139,17 @@ export function createPrismaGrupoRepository(prisma: PrismaClient): GrupoReposito
         data: { activo: false },
       });
     },
+
+    async compartenGrupoActivo(a, b) {
+      if (!esUuid(b)) return false;
+      const n = await prisma.miembroGrupo.count({
+        where: {
+          usuarioId: a,
+          activo: true,
+          grupo: { miembros: { some: { usuarioId: b, activo: true } } },
+        },
+      });
+      return n > 0;
+    },
   };
 }

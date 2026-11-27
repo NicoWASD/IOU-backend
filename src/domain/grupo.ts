@@ -57,6 +57,8 @@ export interface GrupoRepository {
   reactivarMiembro(grupoId: string, usuarioId: string): Promise<Miembro>;
   /** Baja lógica: `activo = false`. */
   desactivarMiembro(grupoId: string, usuarioId: string): Promise<void>;
+  /** RN-22: ¿hay un grupo donde los dos son miembros activos? */
+  compartenGrupoActivo(a: string, b: string): Promise<boolean>;
 }
 
 /** Saldo de un miembro en el grupo, en centavos. */
